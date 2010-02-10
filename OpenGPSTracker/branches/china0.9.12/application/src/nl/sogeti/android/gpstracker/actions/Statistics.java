@@ -108,31 +108,6 @@ public class Statistics extends Activity
          showDialog( DIALOG_GRAPHTYPE );
       }
    };
-
-   private OnClickListener mGraphControlListener = new View.OnClickListener()      {
-      public void onClick( View v )
-      {
-         int id = v.getId();
-         switch( id )
-         {
-            case R.id.graphtype_distancealtitude:
-               mGraphView.setType( GraphCanvas.DISTANCEALTITUDEGRAPH );
-               break;
-            case R.id.graphtype_distancespeed:
-               mGraphView.setType( GraphCanvas.DISTANCESPEEDGRAPH );
-               break;
-            case R.id.graphtype_timealtitude:
-               mGraphView.setType( GraphCanvas.TIMEALTITUDEGRAPH );
-               break;
-            case R.id.graphtype_timespeed:
-               mGraphView.setType( GraphCanvas.TIMESPEEDGRAPH );
-               break;
-            default:
-               break;
-         }
-         dismissDialog( DIALOG_GRAPHTYPE );
-      }
-   };
    
    /** 
     * Called when the activity is first created. 
@@ -277,59 +252,7 @@ public class Statistics extends Activity
          }
       }
    }
-   
-   /*
-    * (non-Javadoc)
-    * @see android.app.Activity#onCreateDialog(int)
-    */
-   @Override
-   protected Dialog onCreateDialog( int id )
-   {
-      Dialog dialog = null;
-      LayoutInflater factory = null;
-      View view = null;
-      Builder builder = null;
-      switch (id)
-      {
-         case DIALOG_GRAPHTYPE:
-            builder = new AlertDialog.Builder( this );
-            factory = LayoutInflater.from( this );
-            view = factory.inflate( R.layout.graphtype, null );
-            builder.setTitle( R.string.dialog_graphtype_title )
-            .setIcon( android.R.drawable.ic_dialog_alert )
-            .setNegativeButton( R.string.btn_cancel, null )
-            .setView( view );
-            dialog = builder.create();
-            return dialog;
-         default:
-            return super.onCreateDialog( id );
-      }
-   }
-
-   /*
-    * (non-Javadoc)
-    * @see android.app.Activity#onPrepareDialog(int, android.app.Dialog)
-    */
-   @Override
-   protected void onPrepareDialog( int id, Dialog dialog )
-   {
-      switch (id)
-      {
-         case DIALOG_GRAPHTYPE:
-            Button speedtime = (Button) dialog.findViewById( R.id.graphtype_timespeed );
-            Button speeddistance = (Button) dialog.findViewById( R.id.graphtype_distancespeed );
-            Button altitudetime = (Button) dialog.findViewById( R.id.graphtype_timealtitude );
-            Button altitudedistance = (Button) dialog.findViewById( R.id.graphtype_distancealtitude );
-            speedtime.setOnClickListener( mGraphControlListener );
-            speeddistance.setOnClickListener( mGraphControlListener );
-            altitudetime.setOnClickListener( mGraphControlListener );
-            altitudedistance.setOnClickListener( mGraphControlListener );
-         default:
-            break;
-      }
-      super.onPrepareDialog( id, dialog );
-   }
-   
+      
    private void drawTrackingStatistics()
    {
       calculating = true;
@@ -492,8 +415,8 @@ public class Statistics extends Activity
       distanceView.setText( distanceText );
       starttimeView.setText( Long.toString( starttime ) );
       endtimeView.setText( Long.toString( endtime ) );
-      String titleFormat = getString( R.string.stat_title );
-      setTitle( String.format( titleFormat, tracknameText ) );
+      String titleFormat = getString( R.string.menu_statistics );
+      setTitle( titleFormat );
       waypointsView.setText( waypointsText );
       
       calculating = false;

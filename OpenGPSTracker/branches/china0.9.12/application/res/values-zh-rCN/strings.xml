@@ -54,11 +54,6 @@
     <string name="menu_statistics">显示统计</string>
     <string name="menu_about">关于</string>
     <string name="menu_showLayers">覆盖</string>
-    <string name="menu_graphtype">Graph type</string>
-    <string name="graphtype_timespeed">Speed against time</string>
-    <string name="graphtype_timealtitude">Altitude against time</string>
-    <string name="graphtype_distancespeed">Speed against distance</string>
-    <string name="graphtype_distancealtitude">Altitude against distance</string>
 
     <string name="chooser_title">如何分享此路线?</string>
 	<string name="receive_filewriter">存储到 SD 卡</string>
@@ -87,12 +82,7 @@
     <string name="showspeed_summary">显示来自最后收到的 GPS 固定的速度。</string>
     <string name="showcompass_title">指南针</string>
     <string name="showcompass_summary">显示指针指向北的指南针</string>
-    <string name="speedsanitycheck_title">Speed sanity check </string>
-    <string name="speedsanitycheck_summary">Only accept reasonable GPS speeds</string>
-    <string name="showlocation_title">My location </string>
-    <string name="showlocation_summary">Show my location and orientation on the map</string>
 
-    <string name="stat_title">Statistics - %s</string>
     <string name="stat_maximumspeed">最高速度</string>
     <string name="stat_maximumaltitude">最高海拔</string>
     <string name="stat_minimalaltitide">最低海拔</string>

@@ -54,11 +54,6 @@
     <string name="menu_statistics">Show statistics</string>
     <string name="menu_about">About</string>
     <string name="menu_showLayers">Overlays</string>
-    <string name="menu_graphtype">Graph type</string>
-    <string name="graphtype_timespeed">Speed against time</string>
-    <string name="graphtype_timealtitude">Altitude against time</string>
-    <string name="graphtype_distancespeed">Speed against distance</string>
-    <string name="graphtype_distancealtitude">Altitude against distance</string>
 
     <string name="chooser_title">How to share this track?</string>
 	<string name="receive_filewriter">Store to SDcard</string>
@@ -87,12 +82,7 @@
     <string name="showspeed_summary">Show the speed from the last received GPS fix.</string>
     <string name="showcompass_title">Compass</string>
     <string name="showcompass_summary">Show a compass with a needle pointing north</string>
-    <string name="speedsanitycheck_title">Speed sanity check </string>
-    <string name="speedsanitycheck_summary">Only accept reasonable GPS speeds</string>
-    <string name="showlocation_title">My location </string>
-    <string name="showlocation_summary">Show my location and orientation on the map</string>
 
-    <string name="stat_title">Statistics - %s</string>
     <string name="stat_maximumspeed">Maximum speed</string>
     <string name="stat_maximumaltitude">Maximum altitude</string>
     <string name="stat_minimalaltitide">Minimum altitude</string>
