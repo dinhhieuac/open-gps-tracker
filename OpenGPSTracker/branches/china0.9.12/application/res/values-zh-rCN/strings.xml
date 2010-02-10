@@ -18,7 +18,6 @@
     <string name="dialog_nooiabout">缺少 OI About</string>
     <string name="dialog_nooiabout_message">需要来自 OpenIntents 项目的\"OI About\"程序来显示关于信息。</string>
     <string name="dialog_layer_title">启动覆盖</string>
-    <string name="dialog_graphtype_title">Graph type</string>
     
     <string name="layer_satellite">卫星</string>
     <string name="layer_traffic">交通</string>

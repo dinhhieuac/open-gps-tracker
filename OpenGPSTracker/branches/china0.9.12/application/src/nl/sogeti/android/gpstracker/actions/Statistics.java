@@ -29,16 +29,12 @@
 package nl.sogeti.android.gpstracker.actions;
 
 import nl.sogeti.android.gpstracker.R;
-import nl.sogeti.android.gpstracker.actions.utils.GraphCanvas;
 import nl.sogeti.android.gpstracker.db.GPStracking.Segments;
 import nl.sogeti.android.gpstracker.db.GPStracking.Tracks;
 import nl.sogeti.android.gpstracker.db.GPStracking.Waypoints;
 import nl.sogeti.android.gpstracker.util.UnitsI18n;
 import nl.sogeti.android.gpstracker.viewer.TrackList;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.AlertDialog.Builder;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.ContentObserver;
@@ -48,12 +44,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.ContextMenu;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.TextView;
 
 /**
@@ -99,7 +93,6 @@ public class Statistics extends Activity
    private TextView maxAltitudeView;
 
    private UnitsI18n mUnits;
-   private GraphCanvas mGraphView;
 
    private OnClickListener mGraphOnClickListener = new OnClickListener()
    {
@@ -119,10 +112,7 @@ public class Statistics extends Activity
       super.onCreate( load );
       mUnits = new UnitsI18n( this );
       setContentView( R.layout.statistics );
-      
-      mGraphView = (GraphCanvas) findViewById( R.id.graph_canvas );
-      mGraphView.setOnClickListener( mGraphOnClickListener  );
-      
+            
       maxSpeedView        = (TextView)findViewById( R.id.stat_maximumspeed );
       minAltitudeView     = (TextView)findViewById( R.id.stat_minimalaltitide );
       maxAltitudeView     = (TextView)findViewById( R.id.stat_maximumaltitude );
@@ -151,10 +141,6 @@ public class Statistics extends Activity
       {
          super.onRestoreInstanceState( load );
       }
-      if( load != null && load.containsKey( GRAPH_TYPE ) )
-      {
-         mGraphView.setType( load.getInt( GRAPH_TYPE ) );
-      }
       if( load != null && load.containsKey( TRACKURI ) )
       {
          mTrackUri = Uri.withAppendedPath( Tracks.CONTENT_URI, load.getString( TRACKURI ) ) ;
@@ -164,7 +150,6 @@ public class Statistics extends Activity
    protected void onSaveInstanceState( Bundle save )
    {
       super.onSaveInstanceState( save );
-      save.putInt( GRAPH_TYPE, mGraphView.getType() );
       save.putString( TRACKURI, mTrackUri.getLastPathSegment() );
    }
  
@@ -391,8 +376,6 @@ public class Statistics extends Activity
             segments.close();
          }
       }
-      
-      mGraphView.setData( mTrackUri, starttime, endtime, distanceTraveled, minAltitude, maxAltitude, maxSpeeddb, mUnits );
       
       maxSpeeddb = mUnits.conversionFromMetersPerSecond( maxSpeeddb );
       maxAltitude = mUnits.conversionFromMeterToSmall  ( maxAltitude );

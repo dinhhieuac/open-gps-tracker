@@ -18,7 +18,6 @@
     <string name="dialog_nooiabout">缺少 OI About</string>
     <string name="dialog_nooiabout_message">需要來自 OpenIntents 項目的\"OI About\"程式來顯示關於資訊。</string>
     <string name="dialog_layer_title">啟動覆寫</string>
-    <string name="dialog_graphtype_title">Grafiek soort</string>
     
     <string name="layer_satellite">衛星</string>
     <string name="layer_traffic">交通</string>

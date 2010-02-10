@@ -18,7 +18,6 @@
     <string name="dialog_nooiabout">OI About nodig</string>
     <string name="dialog_nooiabout_message">De applicatie \"OI About\" van het OpenIntents project is nodig om informatie te tonen.</string>
     <string name="dialog_layer_title">Activeer overlays</string>
-    <string name="dialog_graphtype_title">Grafiek soort</string>
     
     <string name="layer_satellite">Satelliet</string>
     <string name="layer_traffic">Verkeer</string>
