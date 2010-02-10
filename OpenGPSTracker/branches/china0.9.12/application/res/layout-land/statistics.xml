@@ -117,12 +117,5 @@
                android:id="@+id/stat_maximumaltitude" />
          </TableRow>
       </TableLayout>
-
-
    </LinearLayout>
-   <nl.sogeti.android.gpstracker.actions.utils.GraphCanvas
-      android:id="@+id/graph_canvas"
-      android:layout_width="fill_parent"
-      android:layout_height="wrap_content" />
-   />
 </LinearLayout>
