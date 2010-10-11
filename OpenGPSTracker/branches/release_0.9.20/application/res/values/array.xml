@@ -1,0 +1,104 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <string-array name="state_choices">
+        <item>Active</item>
+        <item>Paused</item>
+        <item>Stopped</item>
+    </string-array>
+    
+    <string-array name="precision_choices">
+        <item>Fine</item>
+        <item>Normal</item>
+        <item>Coarse</item>
+        <item>Global</item>
+    </string-array>
+    
+    <string-array name="mapprovider_choices">
+        <item>Google Maps (default)</item>
+        <item>OpenStreetMap (experimental)</item>
+    </string-array>   
+    
+    <string-array name="trackcoloring_choices">
+        <item>Green</item>
+        <item>Red</item>
+        <item>Speed</item>
+        <item>Average speed</item>
+        <item>Waypoints</item>
+    </string-array>
+    
+    <string-array name="units_choices">
+        <item>Device locale</item>
+        <item>Imperial (miles)</item>
+        <item>Metric (meters)</item>
+        <item>Nautical (knots)</item>
+    </string-array>
+    
+    <string-array name="sharetype_choices">
+        <item>KMZ - Google Earth, etc.</item>
+        <item>GPX - the GPS Exchange Format</item>
+        <item>Text - Speed and distance summary</item>
+    </string-array>
+    
+    <string-array name="sharegpxtarget_choices">
+        <item>Store to SD Card</item>
+        <item>Send with an (email) application</item>
+        <item>Publish to jogrunner.de</item>
+    </string-array>
+    
+    <string-array name="sharekmztarget_choices">
+        <item>Store to SD Card</item>
+        <item>Send with an (email) application</item>
+    </string-array>
+    
+    <string-array name="sharetexttarget_choices">
+        <item>Twidroid tweet</item>
+        <item>SMS</item>
+        <item>Generic text send</item>
+    </string-array>
+    
+    <string-array name="precision_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+    
+    <string-array name="mapprovider_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+    
+    <string-array name="trackcoloring_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </string-array>  
+
+    <string-array name="units_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="about_authors" translatable="false"><!-- Add your name here if you helped out -->
+        <item>René de Groot</item>
+        <item>Tom Van Braeckel</item>
+    </string-array>
+
+    <string-array name="about_documenters" translatable="false">
+        <item>René de Groot</item>
+    </string-array>
+
+    <string-array name="about_artists" translatable="false">
+        <item>Program icons: The Android Open Source Project</item>
+        <item>Bubbles icons: ICONS etc. MySiteMyWay</item>
+    </string-array>
+
+    <string-array name="about_translators" translatable="false"><!-- Add your name here if you translated -->
+        <item>René de Groot</item>
+    </string-array>
+    
+</resources>
