@@ -33,13 +33,6 @@
             android:title="@string/logatstartup"
             android:summary="@string/logatstartup_summary"
             android:defaultValue="false" />
-        <ListPreference
-            android:key="mapprovider"
-            android:title="@string/mapprovider_title"
-            android:summary="@string/mapprovider_summary"
-            android:entries="@array/mapprovider_choices"
-            android:entryValues="@array/mapprovider_values"
-            android:defaultValue="0"/>
     </PreferenceCategory>
     
     <PreferenceCategory
@@ -99,5 +92,14 @@
             android:defaultValue="false" 
          />        
     </PreferenceCategory>
-
+    <PreferenceCategory
+        android:title="@string/preference_sharing">
+        <EditTextPreference
+            android:key="JOGRUNNER_AUTH"
+            android:title="@string/jogmap_title"
+            android:summary="@string/jogmap_summary"
+            android:dialogMessage="Please enter the Zugangskey obtained from http://www.jogmap.de/civic4/?q=mobilinfo."
+            android:defaultValue=""
+            />
+    </PreferenceCategory>
 </PreferenceScreen>
