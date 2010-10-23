@@ -306,10 +306,12 @@ public class ShareTrack extends Activity
 
    protected void exportGpx(String chosenFileName, int target)
    {
+      boolean attachments = true;
       EndJob endJob = null;
       switch (target)
       {
          case EXPORT_TARGET_SEND:
+            attachments = true;
             endJob = new EndJob()
                {
                   public void shareFile(Uri fileUri, String contentType)
@@ -319,6 +321,7 @@ public class ShareTrack extends Activity
                };
             break;
          case EXPORT_TARGET_SAVE:
+            attachments = true;
             endJob = new EndJob()
                {
                   public void shareFile(Uri fileUri, String contentType)
@@ -327,6 +330,7 @@ public class ShareTrack extends Activity
                };
             break;
          case EXPORT_TARGET_JOGRUN:
+            attachments = false;
             endJob = new EndJob()
             {
                public void shareFile(Uri fileUri, String contentType)
@@ -341,7 +345,7 @@ public class ShareTrack extends Activity
       }
       if (endJob != null)
       {
-         GpxCreator gpxCreator = new GpxCreator(this, mTrackUri, chosenFileName, new ProgressMonitor(chosenFileName, endJob));
+         GpxCreator gpxCreator = new GpxCreator(this, mTrackUri, chosenFileName, attachments, new ProgressMonitor(chosenFileName, endJob));
          gpxCreator.start();
          ShareTrack.this.finish();
       }
