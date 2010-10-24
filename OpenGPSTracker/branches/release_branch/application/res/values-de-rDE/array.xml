@@ -59,12 +59,12 @@
     </string-array>
 
     <string-array name="about_authors" translatable="false"><!-- Add your name here if you helped out -->
-        <item>RenÃ© de Groot</item>
+        <item>René de Groot</item>
         <item>Tom Van Braeckel</item>        
     </string-array>
 
     <string-array name="about_documenters" translatable="false">
-        <item>RenÃ© de Groot</item>
+        <item>René de Groot</item>
     </string-array>
 
     <string-array name="about_artists" translatable="false">
