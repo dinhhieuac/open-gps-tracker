@@ -71,6 +71,7 @@ public class UnitsI18n
          }
       }
    };
+   private boolean needsUnitFlip ;
    
    @SuppressWarnings("unused")
    private static final String TAG = "OGT.UnitsI18n";
@@ -153,6 +154,7 @@ public class UnitsI18n
    private void init( Resources resources )
    {
       TypedValue outValue = new TypedValue();
+      needsUnitFlip = false;
       resources.getValue( R.raw.conversion_from_mps, outValue, false ) ;
       mConversion_from_mps_to_speed =  outValue.getFloat();
       resources.getValue( R.raw.conversion_from_meter, outValue, false ) ;
@@ -179,19 +181,13 @@ public class UnitsI18n
    
    private void overrideWithPace( Resources resources )
    {
-      TypedValue outValue = new TypedValue();
-      resources.getValue( R.raw.conversion_from_mps_to_pace, outValue, false ) ;
-      mConversion_from_mps_to_speed =  outValue.getFloat();
-      
+      needsUnitFlip = true;      
       mSpeed_unit    = resources.getString( R.string.pace_unitname );
    }
    
    private void overrideWithPaceImperial( Resources resources )
    {
-      TypedValue outValue = new TypedValue();
-      resources.getValue( R.raw.conversion_from_mps_to_pace, outValue, false ) ;
-      mConversion_from_mps_to_speed =  outValue.getFloat();
-      
+      needsUnitFlip  = true;
       mSpeed_unit    = resources.getString( R.string.pace_unitname_imperial );
    }
    
@@ -203,7 +199,12 @@ public class UnitsI18n
    
    public double conversionFromMetersPerSecond( double mps )
    {
-      return mps * mConversion_from_mps_to_speed;
+      double speed = mps * mConversion_from_mps_to_speed;
+      if( needsUnitFlip ) // Flip from "x per hour" to "minutes per x"
+      {
+         speed = (1/speed)*60.0;
+      }
+      return speed;
    }
    public double conversionFromMeter( double meters )
    {

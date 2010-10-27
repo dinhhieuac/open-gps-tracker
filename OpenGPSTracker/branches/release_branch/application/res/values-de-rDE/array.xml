@@ -22,7 +22,7 @@
         <item>Grün</item>
         <item>Rot</item>
         <item>Geschwindigkeit</item>
-        <item>Durschnittsgeschwindigkeit speed</item>
+        <item>Durchschnittsgeschwindigkeit speed</item>
         <item>Waypoints</item>
     </string-array>
     
@@ -73,7 +73,7 @@
     </string-array>
 
     <string-array name="about_translators" translatable="false"><!-- Add your name here if you translated -->
-        <item>jogmap media GmbH</item>
+        <item>Werner Bogula</item>
     </string-array>
     
 </resources>
