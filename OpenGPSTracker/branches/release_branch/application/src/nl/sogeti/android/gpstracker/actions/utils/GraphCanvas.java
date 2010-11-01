@@ -166,6 +166,10 @@ public class GraphCanvas extends View
       }
       else
       {
+         if( mRenderBuffer == null && super.getWidth() > 0 && super.getHeight() > 0 )
+         {
+            initRenderBuffer(super.getWidth(), super.getHeight());
+         }
          rerender = true;
       }
       
@@ -176,7 +180,8 @@ public class GraphCanvas extends View
       mMaxAlititude = mUnits.conversionFromMeterToHeight( calc.getMaxAltitude() );
       if( mUnits.isUnitFlipped() )
       {
-         mHighestSpeedNumber     = mUnits.conversionFromMetersPerSecond( calc.getMinSpeed() );
+         mHighestSpeedNumber     = 1.5 * mUnits.conversionFromMetersPerSecond( calc.getAverageStatisicsSpeed() );
+         Log.d( TAG, "Highest on "+uri+": "+mHighestSpeedNumber );
       }
       else
       {
@@ -192,6 +197,13 @@ public class GraphCanvas extends View
       }
    }
    
+   public synchronized void clearData()
+   {
+      mUri = null;
+      mUnits = null;
+      mRenderBuffer = null;
+   }
+
    public void setType( int graphType)
    {
       if( mGraphType != graphType )
@@ -206,29 +218,19 @@ public class GraphCanvas extends View
       return mGraphType;
    }
 
-   public synchronized void clearData()
-   {
-      mUri = null;
-      mUnits = null;
-      mRenderBuffer = null;
-   }
-
    @Override
    protected synchronized void onSizeChanged( int w, int h, int oldw, int oldh )
    {
       super.onSizeChanged( w, h, oldw, oldh );
-      
-      if( mRenderBuffer == null || mRenderBuffer.getWidth() != w || mRenderBuffer.getHeight() != h )
-      {
-         initRenderBuffer(w, h);
-      }
+      initRenderBuffer(w, h);
+
+      renderGraph();
    }
 
    private void initRenderBuffer(int w, int h)
    {
       mRenderBuffer = Bitmap.createBitmap( w, h, Config.ARGB_8888 );
       mRenderCanvas = new Canvas( mRenderBuffer );
-      renderGraph();
    }
 
    @Override
@@ -239,12 +241,11 @@ public class GraphCanvas extends View
       {
          canvas.drawBitmap( mRenderBuffer, 0, 0, null );
       }
-      
    }
 
    private synchronized void renderGraph()
    {
-      if( mRenderBuffer != null )
+      if( mRenderBuffer != null && mUri != null )
       {
          Log.d( TAG, "renderGraph() type "+mGraphType+" on "+mRenderBuffer.getWidth()+"x"+mRenderBuffer.getHeight() );
          mRenderBuffer.eraseColor( Color.TRANSPARENT );

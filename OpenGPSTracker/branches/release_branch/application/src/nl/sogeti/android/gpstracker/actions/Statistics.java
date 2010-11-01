@@ -223,7 +223,6 @@ public class Statistics extends Activity
       {
          mTrackUri = this.getIntent().getData();
       }
-      drawTrackingStatistics();
    }
 
    @Override
