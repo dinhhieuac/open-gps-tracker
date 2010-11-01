@@ -3,6 +3,7 @@ package nl.sogeti.android.gpstracker.actions.utils;
 import nl.sogeti.android.gpstracker.db.GPStracking.Segments;
 import nl.sogeti.android.gpstracker.db.GPStracking.Tracks;
 import nl.sogeti.android.gpstracker.db.GPStracking.Waypoints;
+import nl.sogeti.android.gpstracker.util.Constants;
 import nl.sogeti.android.gpstracker.util.UnitsI18n;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -17,6 +18,7 @@ public class StatisticsCalulator
    private String overallavgSpeedText = "Unknown";
    private String avgSpeedText = "Unknown";
    private String maxSpeedText = "Unknown";
+   private String minSpeedText = "Unknown";
    private String maxAltitudeText = "Unknown";
    private String minAltitudeText = "Unknown";
    private String tracknameText = "Unknown";
@@ -26,6 +28,7 @@ public class StatisticsCalulator
    private long mEndtime = -1;
    private UnitsI18n mUnits;
    private double mMaxSpeed;
+   private double mMinSpeed;
    private double mMaxAltitude;
    private double mMinAltitude;
    private double mDistanceTraveled;
@@ -51,8 +54,12 @@ public class StatisticsCalulator
       Cursor waypointsCursor = null;
       try
       {
-         waypointsCursor = resolver.query( Uri.withAppendedPath( mTrackUri, "waypoints" ), new String[] { "max  (" + Waypoints.TABLE + "." + Waypoints.SPEED + ")",
-               "max  (" + Waypoints.TABLE + "." + Waypoints.ALTITUDE + ")", "min  (" + Waypoints.TABLE + "." + Waypoints.ALTITUDE + ")", "count(" + Waypoints.TABLE + "." + Waypoints._ID + ")" },
+         waypointsCursor = resolver.query( 
+               Uri.withAppendedPath( mTrackUri, "waypoints" ), 
+               new String[] { "max  (" + Waypoints.TABLE + "." + Waypoints.SPEED + ")"
+                            , "max  (" + Waypoints.TABLE + "." + Waypoints.ALTITUDE + ")"
+                            , "min  (" + Waypoints.TABLE + "." + Waypoints.ALTITUDE + ")"
+                            , "count(" + Waypoints.TABLE + "." + Waypoints._ID + ")" },
                null, null, null );
          if( waypointsCursor.moveToLast() )
          {
@@ -61,6 +68,17 @@ public class StatisticsCalulator
             mMinAltitude = waypointsCursor.getDouble( 2 );
             long nrWaypoints = waypointsCursor.getLong( 3 );
             waypointsText = nrWaypoints + "";
+         }
+         waypointsCursor.close();
+         waypointsCursor = resolver.query( 
+               Uri.withAppendedPath( mTrackUri, "waypoints" ), 
+               new String[] { "min  (" + Waypoints.TABLE + "." + Waypoints.SPEED + ")" },
+               Waypoints.TABLE + "." + Waypoints.SPEED +"  > ?", 
+               new String[] { ""+Constants.MIN_STATISTICS_SPEED }, 
+               null );
+         if( waypointsCursor.moveToLast() )
+         {
+            mMinSpeed = waypointsCursor.getDouble( 0 );
          }
       }
       finally
@@ -148,7 +166,8 @@ public class StatisticsCalulator
          }
       }
 
-      double speed             = mUnits.conversionFromMetersPerSecond( mMaxSpeed );
+      double maxSpeed          = mUnits.conversionFromMetersPerSecond( mMaxSpeed );
+      double minSpeed          = mUnits.conversionFromMetersPerSecond( mMinSpeed );
       double maxAltitude       = mUnits.conversionFromMeterToHeight( mMaxAltitude );
       double minAltitude       = mUnits.conversionFromMeterToHeight( mMinAltitude );
       double overallavgSpeedfl = mUnits.conversionFromMeterAndMiliseconds( mDistanceTraveled, mDuration );
@@ -157,7 +176,8 @@ public class StatisticsCalulator
       avgSpeedText        = String.format( "%.2f %s", avgSpeedfl, mUnits.getSpeedUnit() );
       overallavgSpeedText = String.format( "%.2f %s", overallavgSpeedfl, mUnits.getSpeedUnit() );
       distanceText        = String.format( "%.2f %s", traveled, mUnits.getDistanceUnit() );
-      maxSpeedText        = String.format( "%.2f %s", speed, mUnits.getSpeedUnit() );
+      maxSpeedText        = String.format( "%.2f %s", maxSpeed, mUnits.getSpeedUnit() );
+      minSpeedText        = String.format( "%.2f %s", minSpeed, mUnits.getSpeedUnit() );
       minAltitudeText     = String.format( "%.0f %s", minAltitude, mUnits.getHeightUnit() );
       maxAltitudeText     = String.format( "%.0f %s", maxAltitude, mUnits.getHeightUnit() );
    }
@@ -192,6 +212,16 @@ public class StatisticsCalulator
       return maxSpeedText;
    }
 
+   /**
+    * Get the minSpeedText.
+    *
+    * @return Returns the minSpeedText as a String.
+    */
+   public String getMinSpeedText()
+   {
+      return minSpeedText;
+   }
+   
    /**
     * Get the maxAltitudeText.
     *
@@ -263,13 +293,23 @@ public class StatisticsCalulator
    }
 
    /**
-    * Get the maxSpeeddb.
+    * Get the maximum speed.
     *
-    * @return Returns the maxSpeeddb as a double.
+    * @return Returns the maxSpeeddb as m/s in a double.
     */
    public double getMaxSpeed()
    {
       return mMaxSpeed;
+   }
+   
+   /**
+    * Get the min speed.
+    *
+    * @return Returns the minSpeeddb as m/s in a double.
+    */
+   public double getMinSpeed()
+   {
+      return mMinSpeed;
    }
 
    /**

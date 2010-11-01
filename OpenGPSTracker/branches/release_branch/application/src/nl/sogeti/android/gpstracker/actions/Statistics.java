@@ -260,6 +260,10 @@ public class Statistics extends Activity
    {
       super.onPause();
       mViewFlipper.stopFlipping();
+      mGraphTimeSpeed.clearData();
+      mGraphDistanceSpeed.clearData();
+      mGraphTimeAltitude.clearData();
+      mGraphDistanceAltitude.clearData();
       ContentResolver resolver = this.getApplicationContext().getContentResolver();
       resolver.unregisterContentObserver( this.mTrackObserver );
    }
@@ -272,6 +276,8 @@ public class Statistics extends Activity
    protected void onResume()
    {
       super.onResume();
+      drawTrackingStatistics();
+      
       ContentResolver resolver = this.getApplicationContext().getContentResolver();
       resolver.unregisterContentObserver( this.mTrackObserver );
       resolver.registerContentObserver( mTrackUri, true, this.mTrackObserver );

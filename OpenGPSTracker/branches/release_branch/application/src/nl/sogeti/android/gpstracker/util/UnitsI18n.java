@@ -202,7 +202,14 @@ public class UnitsI18n
       double speed = mps * mConversion_from_mps_to_speed;
       if( needsUnitFlip ) // Flip from "x per hour" to "minutes per x"
       {
-         speed = (1/speed)*60.0;
+         if( speed > 1 ) // Nearly no speed return 0 as if there is no speed
+         {
+            speed = (1/speed)*60.0;
+         }
+         else 
+         {
+            speed = 0;
+         }
       }
       return speed;
    }
@@ -228,7 +235,10 @@ public class UnitsI18n
    {
       return mHeight_unit;
    }
-   
+   public boolean isUnitFlipped()
+   {
+      return needsUnitFlip;
+   }
    /**
     * 
     * Interface definition for a callback to be invoked when the preference for units changed.  
