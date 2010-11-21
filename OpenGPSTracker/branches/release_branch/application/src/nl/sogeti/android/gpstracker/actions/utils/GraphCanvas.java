@@ -181,7 +181,6 @@ public class GraphCanvas extends View
       if( mUnits.isUnitFlipped() )
       {
          mHighestSpeedNumber     = 1.5 * mUnits.conversionFromMetersPerSecond( calc.getAverageStatisicsSpeed() );
-         Log.d( TAG, "Highest on "+uri+": "+mHighestSpeedNumber );
       }
       else
       {
@@ -247,7 +246,6 @@ public class GraphCanvas extends View
    {
       if( mRenderBuffer != null && mUri != null )
       {
-         Log.d( TAG, "renderGraph() type "+mGraphType+" on "+mRenderBuffer.getWidth()+"x"+mRenderBuffer.getHeight() );
          mRenderBuffer.eraseColor( Color.TRANSPARENT );
          switch( mGraphType )
          {
