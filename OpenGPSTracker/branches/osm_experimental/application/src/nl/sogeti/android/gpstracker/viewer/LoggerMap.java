@@ -46,11 +46,18 @@ import nl.sogeti.android.gpstracker.logger.GPSLoggerServiceManager;
 import nl.sogeti.android.gpstracker.logger.SettingsDialog;
 import nl.sogeti.android.gpstracker.util.Constants;
 import nl.sogeti.android.gpstracker.util.UnitsI18n;
-import nl.sogeti.android.gpstracker.viewer.proxy.MapViewProxy;
-import nl.sogeti.android.gpstracker.viewer.proxy.MyLocationOverlayProxy;
 
+import org.andnav.osm.DefaultResourceProxyImpl;
+import org.andnav.osm.ResourceProxy;
+import org.andnav.osm.util.GeoPoint;
+import org.andnav.osm.views.OpenStreetMapView;
+import org.andnav.osm.views.OpenStreetMapViewController;
+import org.andnav.osm.views.overlay.MyLocationOverlay;
+import org.andnav.osm.views.overlay.OpenStreetMapViewOverlay;
+import org.andnav.osm.views.util.OpenStreetMapRendererFactory;
 import org.openintents.intents.AboutIntents;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.Dialog;
@@ -95,16 +102,13 @@ import android.widget.Gallery;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapActivity;
-
 /**
  * Main activity showing a track and allowing logging control
  * 
  * @version $Id$
  * @author rene (c) Jan 18, 2009, Sogeti B.V.
  */
-public class LoggerMap extends MapActivity
+public class LoggerMap extends Activity
 {
    private static final int ZOOM_LEVEL = 16;
    // MENU'S
@@ -152,36 +156,36 @@ public class LoggerMap extends MapActivity
    private SegmentOverlay mLastSegmentOverlay;
    private BaseAdapter mMediaAdapter;
    private Gallery mGallery;
-   
-   private MapViewProxy mMapView = null;
-   private MyLocationOverlayProxy mMylocation;
-   
-   private final ContentObserver mTrackSegmentsObserver = new ContentObserver( new Handler() )
+
+   private OpenStreetMapView mMapView = null;
+   private MyLocationOverlay mMylocation;
+
+   private final ContentObserver mTrackSegmentsObserver = new ContentObserver(new Handler())
       {
          @Override
-         public void onChange( boolean selfUpdate )
+         public void onChange(boolean selfUpdate)
          {
-            if( !selfUpdate )
+            if (!selfUpdate)
             {
-//               Log.d( TAG, "mTrackSegmentsObserver "+ mTrackId );
+               //               Log.d( TAG, "mTrackSegmentsObserver "+ mTrackId );
                LoggerMap.this.updateDataOverlays();
             }
             else
             {
-               Log.w( TAG, "mTrackSegmentsObserver skipping change on "+ mLastSegment );
+               Log.w(TAG, "mTrackSegmentsObserver skipping change on " + mLastSegment);
             }
          }
       };
-   private final ContentObserver mSegmentWaypointsObserver = new ContentObserver( new Handler() )
+   private final ContentObserver mSegmentWaypointsObserver = new ContentObserver(new Handler())
       {
          @Override
-         public void onChange( boolean selfUpdate )
+         public void onChange(boolean selfUpdate)
          {
-            if( !selfUpdate  )
+            if (!selfUpdate)
             {
-//               Log.d( TAG, "mSegmentWaypointsObserver "+ mLastSegment );
+               //               Log.d( TAG, "mSegmentWaypointsObserver "+ mLastSegment );
                LoggerMap.this.updateDisplayedSpeedViews();
-               if( mLastSegmentOverlay != null )
+               if (mLastSegmentOverlay != null)
                {
                   moveActiveViewWindow();
                   mLastSegmentOverlay.calculateTrack();
@@ -190,19 +194,19 @@ public class LoggerMap extends MapActivity
             }
             else
             {
-               Log.w( TAG, "mSegmentWaypointsObserver skipping change on "+ mLastSegment );
+               Log.w(TAG, "mSegmentWaypointsObserver skipping change on " + mLastSegment);
             }
          }
       };
-   private final ContentObserver mTrackMediasObserver = new ContentObserver( new Handler() )
+   private final ContentObserver mTrackMediasObserver = new ContentObserver(new Handler())
       {
          @Override
-         public void onChange( boolean selfUpdate )
+         public void onChange(boolean selfUpdate)
          {
-            if( !selfUpdate )
+            if (!selfUpdate)
             {
-//               Log.d( TAG, "mTrackMediasObserver "+ mTrackId );
-               if( mLastSegmentOverlay != null )
+               //               Log.d( TAG, "mTrackMediasObserver "+ mTrackId );
+               if (mLastSegmentOverlay != null)
                {
                   mLastSegmentOverlay.calculateMedia();
                   mMapView.postInvalidate();
@@ -210,64 +214,64 @@ public class LoggerMap extends MapActivity
             }
             else
             {
-               Log.w( TAG, "mTrackMediasObserver skipping change on "+ mLastSegment );
+               Log.w(TAG, "mTrackMediasObserver skipping change on " + mLastSegment);
             }
          }
       };
    private final DialogInterface.OnClickListener mNoTrackDialogListener = new DialogInterface.OnClickListener()
       {
-         public void onClick( DialogInterface dialog, int which )
+         public void onClick(DialogInterface dialog, int which)
          {
             //            Log.d( TAG, "mNoTrackDialogListener" + which);
-            Intent tracklistIntent = new Intent( LoggerMap.this, TrackList.class );
-            tracklistIntent.putExtra( Tracks._ID, LoggerMap.this.mTrackId );
-            startActivityForResult( tracklistIntent, MENU_TRACKLIST );
+            Intent tracklistIntent = new Intent(LoggerMap.this, TrackList.class);
+            tracklistIntent.putExtra(Tracks._ID, LoggerMap.this.mTrackId);
+            startActivityForResult(tracklistIntent, MENU_TRACKLIST);
          }
       };
 
    private final DialogInterface.OnClickListener mOiAboutDialogListener = new DialogInterface.OnClickListener()
       {
-         public void onClick( DialogInterface dialog, int which )
+         public void onClick(DialogInterface dialog, int which)
          {
-            Uri oiDownload = Uri.parse( "market://details?id=org.openintents.about" );
-            Intent oiAboutIntent = new Intent( Intent.ACTION_VIEW, oiDownload );
+            Uri oiDownload = Uri.parse("market://details?id=org.openintents.about");
+            Intent oiAboutIntent = new Intent(Intent.ACTION_VIEW, oiDownload);
             try
             {
-               startActivity( oiAboutIntent );
+               startActivity(oiAboutIntent);
             }
             catch (ActivityNotFoundException e)
             {
-               oiDownload = Uri.parse( "http://openintents.googlecode.com/files/AboutApp-1.0.0.apk" );
-               oiAboutIntent = new Intent( Intent.ACTION_VIEW, oiDownload );
-               startActivity( oiAboutIntent );
+               oiDownload = Uri.parse("http://openintents.googlecode.com/files/AboutApp-1.0.0.apk");
+               oiAboutIntent = new Intent(Intent.ACTION_VIEW, oiDownload);
+               startActivity(oiAboutIntent);
             }
          }
       };
 
    private final OnCheckedChangeListener mCheckedChangeListener = new OnCheckedChangeListener()
       {
-         public void onCheckedChanged( CompoundButton buttonView, boolean isChecked )
+         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
          {
             int which = buttonView.getId();
             switch (which)
             {
                case R.id.layer_satellite:
-                  setSatelliteOverlay( isChecked );
+                  setSatelliteOverlay(isChecked);
                   break;
                case R.id.layer_traffic:
-                  setTrafficOverlay( isChecked );
+                  setTrafficOverlay(isChecked);
                   break;
                case R.id.layer_speed:
-                  setSpeedOverlay( isChecked );
+                  setSpeedOverlay(isChecked);
                   break;
                case R.id.layer_altitude:
-                  setAltitudeOverlay( isChecked );
+                  setAltitudeOverlay(isChecked);
                   break;
                case R.id.layer_compass:
-                  setCompassOverlay( isChecked );
+                  setCompassOverlay(isChecked);
                   break;
                case R.id.layer_location:
-                  setLocationOverlay( isChecked );
+                  setLocationOverlay(isChecked);
                   break;
                default:
                   break;
@@ -276,43 +280,39 @@ public class LoggerMap extends MapActivity
       };
    private final OnSharedPreferenceChangeListener mSharedPreferenceChangeListener = new OnSharedPreferenceChangeListener()
       {
-         public void onSharedPreferenceChanged( SharedPreferences sharedPreferences, String key )
+         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
          {
-            if( key.equals( Constants.TRACKCOLORING ) )
+            if (key.equals(Constants.TRACKCOLORING))
             {
                updateSpeedColoring();
             }
-            else if( key.equals( Constants.DISABLEBLANKING ) )
+            else if (key.equals(Constants.DISABLEBLANKING))
             {
                updateBlankingBehavior();
             }
-            else if( key.equals( Constants.SPEED ) )
+            else if (key.equals(Constants.SPEED))
             {
                updateSpeedDisplayVisibility();
             }
-            else if( key.equals( Constants.ALTITUDE ) )
+            else if (key.equals(Constants.ALTITUDE))
             {
                updateAltitudeDisplayVisibility();
             }
-            else if( key.equals( Constants.COMPASS ) )
+            else if (key.equals(Constants.COMPASS))
             {
                updateCompassDisplayVisibility();
             }
-            else if( key.equals( Constants.TRAFFIC ) )
+            else if (key.equals(Constants.TRAFFIC))
             {
-               LoggerMap.this.mMapView.setTraffic( sharedPreferences.getBoolean( key, false ) );
+               //               LoggerMap.this.mMapView.setTraffic( sharedPreferences.getBoolean( key, false ) );
             }
-            else if( key.equals( Constants.SATELLITE ) )
+            else if (key.equals(Constants.SATELLITE))
             {
-               LoggerMap.this.mMapView.setSatellite( sharedPreferences.getBoolean( key, false ) );
+               //               LoggerMap.this.mMapView.setSatellite( sharedPreferences.getBoolean( key, false ) );
             }
-            else if( key.equals( Constants.LOCATION ) )
+            else if (key.equals(Constants.LOCATION))
             {
                updateLocationDisplayVisibility();
-            }
-            else if( key.equals( Constants.MAPPROVIDER ) ) 
-            {
-               updateMapProvider();
             }
          }
       };
@@ -325,126 +325,116 @@ public class LoggerMap extends MapActivity
          }
       };
    private final OnClickListener mNoteTextDialogListener = new DialogInterface.OnClickListener()
-   {
-
-      public void onClick( DialogInterface dialog, int which )
       {
-         String noteText = mNoteTextView.getText().toString();
-         Calendar c = Calendar.getInstance();
-         String newName = String.format( "Textnote_%tY-%tm-%td_%tH%tM%tS.txt", c, c, c, c, c, c );
-         String sdcard = Environment.getExternalStorageDirectory().getAbsolutePath();
-         File file = new File( sdcard + Constants.EXTERNAL_DIR + newName );
-         FileWriter filewriter = null;
-         try
+
+         public void onClick(DialogInterface dialog, int which)
          {
-            file.getParentFile().mkdirs();
-            file.createNewFile();
-            filewriter = new FileWriter( file );
-            filewriter.append( noteText );
-            filewriter.flush();
-         }
-         catch (IOException e)
-         {
-            Log.e( TAG, "Note storing failed", e );
-            CharSequence text = e.getLocalizedMessage();
-            Toast toast = Toast.makeText( LoggerMap.this.getApplicationContext(), text, Toast.LENGTH_LONG );
-            toast.show();
-         }
-         finally
-         {
-            if( filewriter!=null){ try { filewriter.close(); } catch (IOException e){ /* */ } }
+            String noteText = mNoteTextView.getText().toString();
+            Calendar c = Calendar.getInstance();
+            String newName = String.format("Textnote_%tY-%tm-%td_%tH%tM%tS.txt", c, c, c, c, c, c);
+            String sdcard = Environment.getExternalStorageDirectory().getAbsolutePath();
+            File file = new File(sdcard + Constants.EXTERNAL_DIR + newName);
+            FileWriter filewriter = null;
+            try
+            {
+               file.getParentFile().mkdirs();
+               file.createNewFile();
+               filewriter = new FileWriter(file);
+               filewriter.append(noteText);
+               filewriter.flush();
+            }
+            catch (IOException e)
+            {
+               Log.e(TAG, "Note storing failed", e);
+               CharSequence text = e.getLocalizedMessage();
+               Toast toast = Toast.makeText(LoggerMap.this.getApplicationContext(), text, Toast.LENGTH_LONG);
+               toast.show();
+            }
+            finally
+            {
+               if (filewriter != null)
+               {
+                  try
+                  {
+                     filewriter.close();
+                  }
+                  catch (IOException e)
+                  { /* */
+                  }
+               }
+            }
+
+            LoggerMap.this.mLoggerServiceManager.storeMediaUri(Uri.fromFile(file));
          }
 
-         
-         LoggerMap.this.mLoggerServiceManager.storeMediaUri( Uri.fromFile( file ) );
-      }
-      
-   };
+      };
    private final OnClickListener mNoteNameDialogListener = new DialogInterface.OnClickListener()
-   {
-
-      public void onClick( DialogInterface dialog, int which )
       {
-         String name = mNoteNameView.getText().toString();
-         Uri media = Uri.withAppendedPath( Constants.NAME_URI, Uri.encode( name ) );
-         LoggerMap.this.mLoggerServiceManager.storeMediaUri( media );
-      }
-      
-   };
+
+         public void onClick(DialogInterface dialog, int which)
+         {
+            String name = mNoteNameView.getText().toString();
+            Uri media = Uri.withAppendedPath(Constants.NAME_URI, Uri.encode(name));
+            LoggerMap.this.mLoggerServiceManager.storeMediaUri(media);
+         }
+
+      };
    private final OnClickListener mNoteSelectDialogListener = new DialogInterface.OnClickListener()
-   {
-
-      public void onClick( DialogInterface dialog, int which )
       {
-         Uri selected = (Uri) mGallery.getSelectedItem();
-         SegmentOverlay.handleMedia( LoggerMap.this, selected );
-      }
-      
-   };
- 
+
+         public void onClick(DialogInterface dialog, int which)
+         {
+            Uri selected = (Uri) mGallery.getSelectedItem();
+            SegmentOverlay.handleMedia(LoggerMap.this, selected);
+         }
+
+      };
+   private OpenStreetMapViewController mController;
+
    /**
     * Called when the activity is first created.
     */
    @Override
-   protected void onCreate( Bundle load )
+   protected void onCreate(Bundle load)
    {
-      super.onCreate( load );
-      this.startService( new Intent( Constants.SERVICENAME ) );
+      super.onCreate(load);
+      this.startService(new Intent(Constants.SERVICENAME));
 
       Object previousInstanceData = getLastNonConfigurationInstance();
-      if( previousInstanceData != null && previousInstanceData instanceof GPSLoggerServiceManager )
+      if (previousInstanceData != null && previousInstanceData instanceof GPSLoggerServiceManager)
       {
          mLoggerServiceManager = (GPSLoggerServiceManager) previousInstanceData;
       }
       else
       {
-         mLoggerServiceManager = new GPSLoggerServiceManager( (Context) this );
+         mLoggerServiceManager = new GPSLoggerServiceManager((Context) this);
       }
       mLoggerServiceManager.startup();
 
-      mUnits = new UnitsI18n( this, mUnitsChangeListener );
+      mUnits = new UnitsI18n(this, mUnitsChangeListener);
 
-      mSharedPreferences = PreferenceManager.getDefaultSharedPreferences( this );
-      mSharedPreferences.registerOnSharedPreferenceChangeListener( mSharedPreferenceChangeListener );
+      mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+      mSharedPreferences.registerOnSharedPreferenceChangeListener(mSharedPreferenceChangeListener);
 
-      setContentView( R.layout.map );
+      setContentView(R.layout.map);
 
-      mMapView = new MapViewProxy();
-      updateMapProvider();
+      mMapView = (OpenStreetMapView) findViewById(R.id.myOsmMapView);
+      mController = mMapView.getController();
+      mMylocation = new MyLocationOverlay(this, mMapView);
+      mMapView.setBuiltInZoomControls(true);
+      mMapView.setClickable(true);
 
-      mMylocation = new MyLocationOverlayProxy( this, mMapView ); 
-      mMapView.setBuiltInZoomControls( true );
-      mMapView.setClickable( true );
-      mMapView.setStreetView( false );
-      mMapView.setSatellite( mSharedPreferences.getBoolean( Constants.SATELLITE, false ) );
-      mMapView.setTraffic( mSharedPreferences.getBoolean( Constants.TRAFFIC, false ) );
+      //      ResourceProxy pResourceProxy = new DefaultResourceProxyImpl(getApplicationContext());
+      //      mMapView.setResourceProxy(pResourceProxy);
+      mMapView.setRenderer(OpenStreetMapRendererFactory.CLOUDMADESTANDARDTILES);
 
-      TextView[] speeds = { (TextView) findViewById( R.id.speedview05 ), (TextView) findViewById( R.id.speedview04 ), (TextView) findViewById( R.id.speedview03 ),
-            (TextView) findViewById( R.id.speedview02 ), (TextView) findViewById( R.id.speedview01 ), (TextView) findViewById( R.id.speedview00 ) };
+      TextView[] speeds = { (TextView) findViewById(R.id.speedview05), (TextView) findViewById(R.id.speedview04), (TextView) findViewById(R.id.speedview03), (TextView) findViewById(R.id.speedview02),
+            (TextView) findViewById(R.id.speedview01), (TextView) findViewById(R.id.speedview00) };
       mSpeedtexts = speeds;
-      mLastGPSSpeedView = (TextView) findViewById( R.id.currentSpeed );
-      mLastGPSAltitudeView = (TextView) findViewById( R.id.currentAltitude );
+      mLastGPSSpeedView = (TextView) findViewById(R.id.currentSpeed);
+      mLastGPSAltitudeView = (TextView) findViewById(R.id.currentAltitude);
 
-      onRestoreInstanceState( load );
-   }
-
-   protected void onPause()
-   {
-      super.onPause();
-      if( this.mWakeLock != null && this.mWakeLock.isHeld() )
-      {
-         this.mWakeLock.release();
-         Log.w( TAG, "onPause(): Released lock to keep screen on!" );
-      }
-      if( mTrackId > 0 )
-      {
-         ContentResolver resolver = this.getApplicationContext().getContentResolver();
-         resolver.unregisterContentObserver( this.mTrackSegmentsObserver );
-         resolver.unregisterContentObserver( this.mSegmentWaypointsObserver );
-         resolver.unregisterContentObserver( this.mTrackMediasObserver );
-      }
-      mMylocation.disableMyLocation();
-      mMylocation.disableCompass();
+      onRestoreInstanceState(load);
    }
 
    protected void onResume()
@@ -457,23 +447,41 @@ public class LoggerMap extends MapActivity
       updateAltitudeDisplayVisibility();
       updateCompassDisplayVisibility();
       updateLocationDisplayVisibility();
-      updateMapProvider();
 
-      if( mTrackId >= 0 )
+      if (mTrackId >= 0)
       {
          ContentResolver resolver = this.getApplicationContext().getContentResolver();
-         Uri trackUri = Uri.withAppendedPath( Tracks.CONTENT_URI, mTrackId+"/segments" );
-         Uri lastSegmentUri = Uri.withAppendedPath( Tracks.CONTENT_URI, mTrackId+"/segments/"+mLastSegment+"/waypoints" );
-         Uri mediaUri = ContentUris.withAppendedId( Media.CONTENT_URI, mTrackId );
+         Uri trackUri = Uri.withAppendedPath(Tracks.CONTENT_URI, mTrackId + "/segments");
+         Uri lastSegmentUri = Uri.withAppendedPath(Tracks.CONTENT_URI, mTrackId + "/segments/" + mLastSegment + "/waypoints");
+         Uri mediaUri = ContentUris.withAppendedId(Media.CONTENT_URI, mTrackId);
 
-         resolver.unregisterContentObserver( this.mTrackSegmentsObserver );
-         resolver.unregisterContentObserver( this.mSegmentWaypointsObserver );
-         resolver.unregisterContentObserver( this.mTrackMediasObserver );
-         resolver.registerContentObserver( trackUri,       false, this.mTrackSegmentsObserver );
-         resolver.registerContentObserver( lastSegmentUri, true, this.mSegmentWaypointsObserver );
-         resolver.registerContentObserver( mediaUri,       true, this.mTrackMediasObserver );
+         resolver.unregisterContentObserver(this.mTrackSegmentsObserver);
+         resolver.unregisterContentObserver(this.mSegmentWaypointsObserver);
+         resolver.unregisterContentObserver(this.mTrackMediasObserver);
+         resolver.registerContentObserver(trackUri, false, this.mTrackSegmentsObserver);
+         resolver.registerContentObserver(lastSegmentUri, true, this.mSegmentWaypointsObserver);
+         resolver.registerContentObserver(mediaUri, true, this.mTrackMediasObserver);
       }
       updateDataOverlays();
+   }
+
+   protected void onPause()
+   {
+      super.onPause();
+      if (this.mWakeLock != null && this.mWakeLock.isHeld())
+      {
+         this.mWakeLock.release();
+         Log.w(TAG, "onPause(): Released lock to keep screen on!");
+      }
+      if (mTrackId > 0)
+      {
+         ContentResolver resolver = this.getApplicationContext().getContentResolver();
+         resolver.unregisterContentObserver(this.mTrackSegmentsObserver);
+         resolver.unregisterContentObserver(this.mSegmentWaypointsObserver);
+         resolver.unregisterContentObserver(this.mTrackMediasObserver);
+      }
+      mMylocation.disableMyLocation();
+      mMylocation.disableCompass();
    }
 
    /*
@@ -485,15 +493,15 @@ public class LoggerMap extends MapActivity
    {
       super.onDestroy();
       this.mLoggerServiceManager.shutdown();
-      if( mWakeLock != null && mWakeLock.isHeld() )
+      if (mWakeLock != null && mWakeLock.isHeld())
       {
          mWakeLock.release();
-         Log.w( TAG, "onDestroy(): Released lock to keep screen on!" );
+         Log.w(TAG, "onDestroy(): Released lock to keep screen on!");
       }
-      mSharedPreferences.unregisterOnSharedPreferenceChangeListener( this.mSharedPreferenceChangeListener );
-      if( mLoggerServiceManager.getLoggingState() == Constants.STOPPED )
+      mSharedPreferences.unregisterOnSharedPreferenceChangeListener(this.mSharedPreferenceChangeListener);
+      if (mLoggerServiceManager.getLoggingState() == Constants.STOPPED)
       {
-         stopService( new Intent( Constants.SERVICENAME ) );
+         stopService(new Intent(Constants.SERVICENAME));
       }
    }
 
@@ -502,72 +510,72 @@ public class LoggerMap extends MapActivity
     * @see com.google.android.maps.MapActivity#onNewIntent(android.content.Intent)
     */
    @Override
-   public void onNewIntent( Intent newIntent )
+   public void onNewIntent(Intent newIntent)
    {
       Uri data = newIntent.getData();
-      if( data != null )
+      if (data != null)
       {
-         moveToTrack( Long.parseLong( data.getLastPathSegment() ), true );
+         moveToTrack(Long.parseLong(data.getLastPathSegment()), true);
       }
    }
 
    @Override
-   protected void onRestoreInstanceState( Bundle load )
+   protected void onRestoreInstanceState(Bundle load)
    {
-      if( load != null )
+      if (load != null)
       {
-//         Log.d( TAG, "Restoring the prevoious map " );
-         super.onRestoreInstanceState( load );
-      }    
+         //         Log.d( TAG, "Restoring the prevoious map " );
+         super.onRestoreInstanceState(load);
+      }
       Uri data = this.getIntent().getData();
-      if( load != null && load.containsKey( "track" ) ) // 1st track from a previous instance of this activity
+      if (load != null && load.containsKey("track")) // 1st track from a previous instance of this activity
       {
-         long loadTrackId = load.getLong( "track" );
-//         Log.d( TAG, "Moving to restored track "+loadTrackId );
-         moveToTrack( loadTrackId, false );
+         long loadTrackId = load.getLong("track");
+         //         Log.d( TAG, "Moving to restored track "+loadTrackId );
+         moveToTrack(loadTrackId, false);
       }
-      else if( data != null )                           // 2nd track ordered to make
+      else if (data != null) // 2nd track ordered to make
       {
-         long loadTrackId = Long.parseLong( data.getLastPathSegment() );
-//         Log.d( TAG, "Moving to intented track "+loadTrackId );
-         moveToTrack( loadTrackId, true );
-      }
-      else 
-      {
-//         Log.d( TAG, "Moving to last track " );
-         moveToLastTrack();                             // 3rd just try the last track
-      }
-
-      if( load != null && load.containsKey( "zoom" ) )
-      {
-         mMapView.getController().setZoom( load.getInt( "zoom" ) );
+         long loadTrackId = Long.parseLong(data.getLastPathSegment());
+         //         Log.d( TAG, "Moving to intented track "+loadTrackId );
+         moveToTrack(loadTrackId, true);
       }
       else
       {
-         mMapView.getController().setZoom( LoggerMap.ZOOM_LEVEL );
+         //         Log.d( TAG, "Moving to last track " );
+         moveToLastTrack(); // 3rd just try the last track
       }
 
-      if( load != null && load.containsKey( "e6lat" ) && load.containsKey( "e6long" ) )
+      if (load != null && load.containsKey("zoom"))
       {
-         GeoPoint storedPoint = new GeoPoint( load.getInt( "e6lat" ), load.getInt( "e6long" ) );
-         this.mMapView.getController().animateTo( storedPoint );
+         mController.setZoom(load.getInt("zoom"));
+      }
+      else
+      {
+         mController.setZoom(LoggerMap.ZOOM_LEVEL);
+      }
+
+      if (load != null && load.containsKey("e6lat") && load.containsKey("e6long"))
+      {
+         GeoPoint storedPoint = new GeoPoint(load.getInt("e6lat"), load.getInt("e6long"));
+         mController.animateTo(storedPoint);
       }
       else
       {
          GeoPoint lastPoint = getLastTrackPoint();
-         this.mMapView.getController().animateTo( lastPoint );
+         mController.animateTo(lastPoint);
       }
    }
 
    @Override
-   protected void onSaveInstanceState( Bundle save )
+   protected void onSaveInstanceState(Bundle save)
    {
-      super.onSaveInstanceState( save );
-      save.putLong( "track", this.mTrackId );
-      save.putInt( "zoom", this.mMapView.getZoomLevel() );
+      super.onSaveInstanceState(save);
+      save.putLong("track", this.mTrackId);
+      save.putInt("zoom", this.mMapView.getZoomLevel());
       GeoPoint point = this.mMapView.getMapCenter();
-      save.putInt( "e6lat", point.getLatitudeE6() );
-      save.putInt( "e6long", point.getLongitudeE6() );
+      save.putInt("e6lat", point.getLatitudeE6());
+      save.putInt("e6long", point.getLongitudeE6());
    }
 
    /*
@@ -582,124 +590,116 @@ public class LoggerMap extends MapActivity
    }
 
    @Override
-   public boolean onKeyDown( int keyCode, KeyEvent event )
+   public boolean onKeyDown(int keyCode, KeyEvent event)
    {
       boolean propagate = true;
       switch (keyCode)
       {
          case KeyEvent.KEYCODE_T:
-            propagate = this.mMapView.getController().zoomIn();
+            propagate = mController.zoomIn();
             break;
          case KeyEvent.KEYCODE_G:
-            propagate = this.mMapView.getController().zoomOut();
-            break;
-         case KeyEvent.KEYCODE_S:
-            setSatelliteOverlay( !this.mMapView.isSatellite() );
-            propagate = false;
-            break;
-         case KeyEvent.KEYCODE_A:
-            setTrafficOverlay( !this.mMapView.isTraffic() );
-            propagate = false;
+            propagate = mController.zoomOut();
             break;
          case KeyEvent.KEYCODE_F:
-            moveToTrack( this.mTrackId - 1, true );
+            moveToTrack(this.mTrackId - 1, true);
             propagate = false;
             break;
          case KeyEvent.KEYCODE_H:
-            moveToTrack( this.mTrackId + 1, true );
+            moveToTrack(this.mTrackId + 1, true);
             propagate = false;
             break;
          default:
-            propagate = super.onKeyDown( keyCode, event );
+            propagate = super.onKeyDown(keyCode, event);
             break;
       }
       return propagate;
    }
 
-   private void setTrafficOverlay( boolean b )
+   private void setTrafficOverlay(boolean b)
    {
       Editor editor = mSharedPreferences.edit();
-      editor.putBoolean( Constants.TRAFFIC, b );
+      editor.putBoolean(Constants.TRAFFIC, b);
       editor.commit();
    }
 
-   private void setSatelliteOverlay( boolean b )
+   private void setSatelliteOverlay(boolean b)
    {
       Editor editor = mSharedPreferences.edit();
-      editor.putBoolean( Constants.SATELLITE, b );
+      editor.putBoolean(Constants.SATELLITE, b);
       editor.commit();
    }
 
-   private void setSpeedOverlay( boolean b )
+   private void setSpeedOverlay(boolean b)
    {
       Editor editor = mSharedPreferences.edit();
-      editor.putBoolean( Constants.SPEED, b );
+      editor.putBoolean(Constants.SPEED, b);
       editor.commit();
    }
 
-   private void setAltitudeOverlay( boolean b )
+   private void setAltitudeOverlay(boolean b)
    {
       Editor editor = mSharedPreferences.edit();
-      editor.putBoolean( Constants.ALTITUDE, b );
-      editor.commit();
-   }
-   
-   private void setCompassOverlay( boolean b )
-   {
-      Editor editor = mSharedPreferences.edit();
-      editor.putBoolean( Constants.COMPASS, b );
+      editor.putBoolean(Constants.ALTITUDE, b);
       editor.commit();
    }
 
-   private void setLocationOverlay( boolean b )
+   private void setCompassOverlay(boolean b)
    {
       Editor editor = mSharedPreferences.edit();
-      editor.putBoolean( Constants.LOCATION, b );
+      editor.putBoolean(Constants.COMPASS, b);
+      editor.commit();
+   }
+
+   private void setLocationOverlay(boolean b)
+   {
+      Editor editor = mSharedPreferences.edit();
+      editor.putBoolean(Constants.LOCATION, b);
       editor.commit();
    }
 
    @Override
-   public boolean onCreateOptionsMenu( Menu menu )
+   public boolean onCreateOptionsMenu(Menu menu)
    {
-      boolean result = super.onCreateOptionsMenu( menu );
+      boolean result = super.onCreateOptionsMenu(menu);
 
-      menu.add( ContextMenu.NONE, MENU_TRACKING, ContextMenu.NONE, R.string.menu_tracking ).setIcon( R.drawable.ic_menu_movie ).setAlphabeticShortcut( 'T' );
-      menu.add( ContextMenu.NONE, MENU_LAYERS, ContextMenu.NONE, R.string.menu_showLayers ).setIcon( R.drawable.ic_menu_mapmode ).setAlphabeticShortcut( 'L' );
-      SubMenu notemenu = menu.addSubMenu( ContextMenu.NONE, MENU_NOTE, ContextMenu.NONE, R.string.menu_insertnote ).setIcon( R.drawable.ic_menu_myplaces );
-      
-      menu.add( ContextMenu.NONE, MENU_STATS, ContextMenu.NONE, R.string.menu_statistics ).setIcon( R.drawable.ic_menu_picture ).setAlphabeticShortcut( 'S' );
-      menu.add( ContextMenu.NONE, MENU_SHARE, ContextMenu.NONE, R.string.menu_shareTrack ).setIcon( R.drawable.ic_menu_share ).setAlphabeticShortcut('I');
+      menu.add(ContextMenu.NONE, MENU_TRACKING, ContextMenu.NONE, R.string.menu_tracking).setIcon(R.drawable.ic_menu_movie).setAlphabeticShortcut('T');
+//      menu.add(ContextMenu.NONE, MENU_LAYERS, ContextMenu.NONE, R.string.menu_showLayers).setIcon(R.drawable.ic_menu_mapmode).setAlphabeticShortcut('L').setEnabled(false);
+      SubMenu notemenu = menu.addSubMenu(ContextMenu.NONE, MENU_NOTE, ContextMenu.NONE, R.string.menu_insertnote).setIcon(R.drawable.ic_menu_myplaces);
+
+      menu.add(ContextMenu.NONE, MENU_STATS, ContextMenu.NONE, R.string.menu_statistics).setIcon(R.drawable.ic_menu_picture).setAlphabeticShortcut('S');
+      menu.add(ContextMenu.NONE, MENU_SHARE, ContextMenu.NONE, R.string.menu_shareTrack).setIcon(R.drawable.ic_menu_share).setAlphabeticShortcut('I');
       // More
 
-      menu.add( ContextMenu.NONE, MENU_TRACKLIST, ContextMenu.NONE, R.string.menu_tracklist ).setIcon( R.drawable.ic_menu_show_list ).setAlphabeticShortcut( 'P' );
-      menu.add( ContextMenu.NONE, MENU_SETTINGS, ContextMenu.NONE, R.string.menu_settings ).setIcon( R.drawable.ic_menu_preferences ).setAlphabeticShortcut( 'C' );
-      menu.add( ContextMenu.NONE, MENU_ABOUT, ContextMenu.NONE, R.string.menu_about ).setIcon( R.drawable.ic_menu_info_details ).setAlphabeticShortcut( 'A' );
-            
-      notemenu.add( ContextMenu.NONE, MENU_NAME, ContextMenu.NONE, R.string.menu_notename );
-      notemenu.add( ContextMenu.NONE, MENU_TEXT, ContextMenu.NONE, R.string.menu_notetext );
-      notemenu.add( ContextMenu.NONE, MENU_VOICE, ContextMenu.NONE, R.string.menu_notespeech );
-      notemenu.add( ContextMenu.NONE, MENU_PICTURE, ContextMenu.NONE, R.string.menu_notepicture );
-      notemenu.add( ContextMenu.NONE, MENU_VIDEO, ContextMenu.NONE, R.string.menu_notevideo );
-      
+      menu.add(ContextMenu.NONE, MENU_TRACKLIST, ContextMenu.NONE, R.string.menu_tracklist).setIcon(R.drawable.ic_menu_show_list).setAlphabeticShortcut('P');
+      menu.add(ContextMenu.NONE, MENU_SETTINGS, ContextMenu.NONE, R.string.menu_settings).setIcon(R.drawable.ic_menu_preferences).setAlphabeticShortcut('C');
+      menu.add(ContextMenu.NONE, MENU_ABOUT, ContextMenu.NONE, R.string.menu_about).setIcon(R.drawable.ic_menu_info_details).setAlphabeticShortcut('A');
+
+      notemenu.add(ContextMenu.NONE, MENU_NAME, ContextMenu.NONE, R.string.menu_notename);
+      notemenu.add(ContextMenu.NONE, MENU_TEXT, ContextMenu.NONE, R.string.menu_notetext);
+      notemenu.add(ContextMenu.NONE, MENU_VOICE, ContextMenu.NONE, R.string.menu_notespeech);
+      notemenu.add(ContextMenu.NONE, MENU_PICTURE, ContextMenu.NONE, R.string.menu_notepicture);
+      notemenu.add(ContextMenu.NONE, MENU_VIDEO, ContextMenu.NONE, R.string.menu_notevideo);
+
       return result;
    }
-   
+
    /*
     * (non-Javadoc)
     * @see android.app.Activity#onPrepareOptionsMenu(android.view.Menu)
     */
    @Override
-   public boolean onPrepareOptionsMenu( Menu menu )
+   public boolean onPrepareOptionsMenu(Menu menu)
    {
-      MenuItem notemenu = menu.findItem( MENU_NOTE );
-      notemenu.setEnabled( mLoggerServiceManager.isMediaPrepared() );
-      MenuItem sharemenu = menu.findItem( MENU_SHARE );
-      sharemenu.setEnabled( mTrackId >= 0 );
-      return super.onPrepareOptionsMenu( menu );
+      MenuItem notemenu = menu.findItem(MENU_NOTE);
+      notemenu.setEnabled(mLoggerServiceManager.isMediaPrepared());
+      MenuItem sharemenu = menu.findItem(MENU_SHARE);
+      sharemenu.setEnabled(mTrackId >= 0);
+      return super.onPrepareOptionsMenu(menu);
    }
 
    @Override
-   public boolean onOptionsItemSelected( MenuItem item )
+   public boolean onOptionsItemSelected(MenuItem item)
    {
       boolean handled = false;
 
@@ -707,57 +707,57 @@ public class LoggerMap extends MapActivity
       switch (item.getItemId())
       {
          case MENU_TRACKING:
-            Intent controlIntent = new Intent( this, ControlTracking.class );
-            startActivityForResult( controlIntent, MENU_TRACKING );
+            Intent controlIntent = new Intent(this, ControlTracking.class);
+            startActivityForResult(controlIntent, MENU_TRACKING);
             handled = true;
             break;
          case MENU_LAYERS:
-            showDialog( DIALOG_LAYERS );
+            showDialog(DIALOG_LAYERS);
             handled = true;
             break;
          case MENU_SETTINGS:
-            Intent settingsIntent = new Intent( this, SettingsDialog.class );
-            startActivity( settingsIntent );
+            Intent settingsIntent = new Intent(this, SettingsDialog.class);
+            startActivity(settingsIntent);
             handled = true;
             break;
          case MENU_TRACKLIST:
-            Intent tracklistIntent = new Intent( this, TrackList.class );
-            tracklistIntent.putExtra( Tracks._ID, this.mTrackId );
-            startActivityForResult( tracklistIntent, MENU_TRACKLIST );
+            Intent tracklistIntent = new Intent(this, TrackList.class);
+            tracklistIntent.putExtra(Tracks._ID, this.mTrackId);
+            startActivityForResult(tracklistIntent, MENU_TRACKLIST);
             break;
          case MENU_STATS:
-            if( this.mTrackId >= 0 )
+            if (this.mTrackId >= 0)
             {
-               Intent actionIntent = new Intent( this, Statistics.class );
-               trackUri = ContentUris.withAppendedId( Tracks.CONTENT_URI, mTrackId );
-               actionIntent.setData( trackUri );
-               startActivity( actionIntent );
+               Intent actionIntent = new Intent(this, Statistics.class);
+               trackUri = ContentUris.withAppendedId(Tracks.CONTENT_URI, mTrackId);
+               actionIntent.setData(trackUri);
+               startActivity(actionIntent);
                handled = true;
                break;
             }
             else
             {
-               showDialog( DIALOG_NOTRACK );
+               showDialog(DIALOG_NOTRACK);
             }
             handled = true;
             break;
          case MENU_ABOUT:
-            Intent intent = new Intent( AboutIntents.ACTION_SHOW_ABOUT_DIALOG );
+            Intent intent = new Intent(AboutIntents.ACTION_SHOW_ABOUT_DIALOG);
             try
             {
-               startActivityForResult( intent, MENU_ABOUT );
+               startActivityForResult(intent, MENU_ABOUT);
             }
             catch (ActivityNotFoundException e)
             {
-               showDialog( DIALOG_INSTALL_ABOUT );
+               showDialog(DIALOG_INSTALL_ABOUT);
             }
             break;
          case MENU_SHARE:
-            Intent actionIntent = new Intent( Intent.ACTION_RUN );
-            trackUri = ContentUris.withAppendedId( Tracks.CONTENT_URI, mTrackId );
-            actionIntent.setDataAndType( trackUri, Tracks.CONTENT_ITEM_TYPE );
-            actionIntent.addFlags( Intent.FLAG_GRANT_READ_URI_PERMISSION );
-            startActivity( Intent.createChooser( actionIntent, getString( R.string.share_track ) ) );
+            Intent actionIntent = new Intent(Intent.ACTION_RUN);
+            trackUri = ContentUris.withAppendedId(Tracks.CONTENT_URI, mTrackId);
+            actionIntent.setDataAndType(trackUri, Tracks.CONTENT_ITEM_TYPE);
+            actionIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(actionIntent, getString(R.string.share_track)));
             handled = true;
             break;
          case MENU_PICTURE:
@@ -773,15 +773,15 @@ public class LoggerMap extends MapActivity
             handled = true;
             break;
          case MENU_TEXT:
-            showDialog( DIALOG_TEXT );
+            showDialog(DIALOG_TEXT);
             handled = true;
             break;
          case MENU_NAME:
-            showDialog( DIALOG_NAME );
+            showDialog(DIALOG_NAME);
             handled = true;
             break;
          default:
-            handled = super.onOptionsItemSelected( item );
+            handled = super.onOptionsItemSelected(item);
             break;
       }
       return handled;
@@ -792,7 +792,7 @@ public class LoggerMap extends MapActivity
     * @see android.app.Activity#onCreateDialog(int)
     */
    @Override
-   protected Dialog onCreateDialog( int id )
+   protected Dialog onCreateDialog(int id)
    {
       Dialog dialog = null;
       LayoutInflater factory = null;
@@ -801,92 +801,65 @@ public class LoggerMap extends MapActivity
       switch (id)
       {
          case DIALOG_LAYERS:
-            builder = new AlertDialog.Builder( this );
-            factory = LayoutInflater.from( this );
-            view = factory.inflate( R.layout.layerdialog, null );
-            mSatellite = (CheckBox) view.findViewById( R.id.layer_satellite );
-            mSatellite.setOnCheckedChangeListener( mCheckedChangeListener );
-            mTraffic = (CheckBox) view.findViewById( R.id.layer_traffic );
-            mTraffic.setOnCheckedChangeListener( mCheckedChangeListener );
-            mSpeed = (CheckBox) view.findViewById( R.id.layer_speed );
-            mSpeed.setOnCheckedChangeListener( mCheckedChangeListener );
-            mAltitude = (CheckBox) view.findViewById( R.id.layer_altitude );
-            mAltitude.setOnCheckedChangeListener( mCheckedChangeListener );
-            mCompass = (CheckBox) view.findViewById( R.id.layer_compass );
-            mCompass.setOnCheckedChangeListener( mCheckedChangeListener );
-            mLocation = (CheckBox) view.findViewById( R.id.layer_location );
-            mLocation.setOnCheckedChangeListener( mCheckedChangeListener );
-            builder
-               .setTitle( R.string.dialog_layer_title )
-               .setIcon( android.R.drawable.ic_dialog_map )
-               .setPositiveButton( R.string.btn_okay, null )
-               .setView( view );
+            builder = new AlertDialog.Builder(this);
+            factory = LayoutInflater.from(this);
+            view = factory.inflate(R.layout.layerdialog, null);
+            mSatellite = (CheckBox) view.findViewById(R.id.layer_satellite);
+            mSatellite.setOnCheckedChangeListener(mCheckedChangeListener);
+            mTraffic = (CheckBox) view.findViewById(R.id.layer_traffic);
+            mTraffic.setOnCheckedChangeListener(mCheckedChangeListener);
+            mSpeed = (CheckBox) view.findViewById(R.id.layer_speed);
+            mSpeed.setOnCheckedChangeListener(mCheckedChangeListener);
+            mAltitude = (CheckBox) view.findViewById(R.id.layer_altitude);
+            mAltitude.setOnCheckedChangeListener(mCheckedChangeListener);
+            mCompass = (CheckBox) view.findViewById(R.id.layer_compass);
+            mCompass.setOnCheckedChangeListener(mCheckedChangeListener);
+            mLocation = (CheckBox) view.findViewById(R.id.layer_location);
+            mLocation.setOnCheckedChangeListener(mCheckedChangeListener);
+            builder.setTitle(R.string.dialog_layer_title).setIcon(android.R.drawable.ic_dialog_map).setPositiveButton(R.string.btn_okay, null).setView(view);
             dialog = builder.create();
             return dialog;
          case DIALOG_NOTRACK:
-            builder = new AlertDialog.Builder( this );
-            builder
-               .setTitle( R.string.dialog_notrack_title )
-               .setMessage( R.string.dialog_notrack_message )
-               .setIcon( android.R.drawable.ic_dialog_alert )
-               .setPositiveButton( R.string.btn_selecttrack, mNoTrackDialogListener )
-               .setNegativeButton( R.string.btn_cancel, null );
+            builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.dialog_notrack_title).setMessage(R.string.dialog_notrack_message).setIcon(android.R.drawable.ic_dialog_alert)
+                  .setPositiveButton(R.string.btn_selecttrack, mNoTrackDialogListener).setNegativeButton(R.string.btn_cancel, null);
             dialog = builder.create();
             return dialog;
          case DIALOG_INSTALL_ABOUT:
-            builder = new AlertDialog.Builder( this );
-            builder
-               .setTitle( R.string.dialog_nooiabout )
-               .setMessage( R.string.dialog_nooiabout_message )
-               .setIcon( android.R.drawable.ic_dialog_alert )
-               .setPositiveButton( R.string.btn_install, mOiAboutDialogListener )
-               .setNegativeButton( R.string.btn_cancel, null );
+            builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.dialog_nooiabout).setMessage(R.string.dialog_nooiabout_message).setIcon(android.R.drawable.ic_dialog_alert)
+                  .setPositiveButton(R.string.btn_install, mOiAboutDialogListener).setNegativeButton(R.string.btn_cancel, null);
             dialog = builder.create();
             return dialog;
          case DIALOG_TEXT:
-            builder = new AlertDialog.Builder( this );
-            factory = LayoutInflater.from( this );
-            view = factory.inflate( R.layout.notetextdialog, null );
-            mNoteTextView = (EditText) view.findViewById( R.id.notetext );
-            builder
-               .setTitle( R.string.dialog_notetext_title )
-               .setMessage( R.string.dialog_notetext_message )
-               .setIcon( android.R.drawable.ic_dialog_map )
-               .setPositiveButton( R.string.btn_okay, mNoteTextDialogListener )
-               .setNegativeButton( R.string.btn_cancel, null )
-               .setView( view );
+            builder = new AlertDialog.Builder(this);
+            factory = LayoutInflater.from(this);
+            view = factory.inflate(R.layout.notetextdialog, null);
+            mNoteTextView = (EditText) view.findViewById(R.id.notetext);
+            builder.setTitle(R.string.dialog_notetext_title).setMessage(R.string.dialog_notetext_message).setIcon(android.R.drawable.ic_dialog_map)
+                  .setPositiveButton(R.string.btn_okay, mNoteTextDialogListener).setNegativeButton(R.string.btn_cancel, null).setView(view);
             dialog = builder.create();
             return dialog;
          case DIALOG_NAME:
-            builder = new AlertDialog.Builder( this );
-            factory = LayoutInflater.from( this );
-            view = factory.inflate( R.layout.notenamedialog, null );
-            mNoteNameView = (EditText) view.findViewById( R.id.notename );
-            builder
-               .setTitle( R.string.dialog_notename_title )
-               .setMessage( R.string.dialog_notename_message )
-               .setIcon( android.R.drawable.ic_dialog_map )
-               .setPositiveButton( R.string.btn_okay, mNoteNameDialogListener )
-               .setNegativeButton( R.string.btn_cancel, null )
-               .setView( view );
+            builder = new AlertDialog.Builder(this);
+            factory = LayoutInflater.from(this);
+            view = factory.inflate(R.layout.notenamedialog, null);
+            mNoteNameView = (EditText) view.findViewById(R.id.notename);
+            builder.setTitle(R.string.dialog_notename_title).setMessage(R.string.dialog_notename_message).setIcon(android.R.drawable.ic_dialog_map)
+                  .setPositiveButton(R.string.btn_okay, mNoteNameDialogListener).setNegativeButton(R.string.btn_cancel, null).setView(view);
             dialog = builder.create();
             return dialog;
          case DIALOG_URIS:
-            builder = new AlertDialog.Builder( this );
-            factory = LayoutInflater.from( this );
-            view = factory.inflate( R.layout.mediachooser, null );
-            mGallery = (Gallery) view.findViewById( R.id.gallery );
-            builder
-               .setTitle( R.string.dialog_select_media_title )
-               .setMessage( R.string.dialog_select_media_message )
-               .setIcon( android.R.drawable.ic_dialog_alert )
-               .setNegativeButton( R.string.btn_cancel, null )
-               .setPositiveButton( R.string.btn_okay, mNoteSelectDialogListener )
-               .setView( view );
+            builder = new AlertDialog.Builder(this);
+            factory = LayoutInflater.from(this);
+            view = factory.inflate(R.layout.mediachooser, null);
+            mGallery = (Gallery) view.findViewById(R.id.gallery);
+            builder.setTitle(R.string.dialog_select_media_title).setMessage(R.string.dialog_select_media_message).setIcon(android.R.drawable.ic_dialog_alert)
+                  .setNegativeButton(R.string.btn_cancel, null).setPositiveButton(R.string.btn_okay, mNoteSelectDialogListener).setView(view);
             dialog = builder.create();
             return dialog;
          default:
-            return super.onCreateDialog( id );
+            return super.onCreateDialog(id);
       }
    }
 
@@ -895,24 +868,24 @@ public class LoggerMap extends MapActivity
     * @see android.app.Activity#onPrepareDialog(int, android.app.Dialog)
     */
    @Override
-   protected void onPrepareDialog( int id, Dialog dialog )
+   protected void onPrepareDialog(int id, Dialog dialog)
    {
       switch (id)
       {
          case DIALOG_LAYERS:
-            mSatellite.setChecked( mSharedPreferences.getBoolean( Constants.SATELLITE, false ) );
-            mTraffic.setChecked( mSharedPreferences.getBoolean( Constants.TRAFFIC, false ) );
-            mSpeed.setChecked( mSharedPreferences.getBoolean( Constants.SPEED, false ) );
-            mAltitude.setChecked( mSharedPreferences.getBoolean( Constants.ALTITUDE, false ) );
-            mCompass.setChecked( mSharedPreferences.getBoolean( Constants.COMPASS, false ) );
-            mLocation.setChecked( mSharedPreferences.getBoolean( Constants.LOCATION, false ) );
+            mSatellite.setChecked(mSharedPreferences.getBoolean(Constants.SATELLITE, false));
+            mTraffic.setChecked(mSharedPreferences.getBoolean(Constants.TRAFFIC, false));
+            mSpeed.setChecked(mSharedPreferences.getBoolean(Constants.SPEED, false));
+            mAltitude.setChecked(mSharedPreferences.getBoolean(Constants.ALTITUDE, false));
+            mCompass.setChecked(mSharedPreferences.getBoolean(Constants.COMPASS, false));
+            mLocation.setChecked(mSharedPreferences.getBoolean(Constants.LOCATION, false));
             break;
          case DIALOG_URIS:
-            mGallery.setAdapter( mMediaAdapter );  
+            mGallery.setAdapter(mMediaAdapter);
          default:
             break;
       }
-      super.onPrepareDialog( id, dialog );
+      super.onPrepareDialog(id, dialog);
    }
 
    /*
@@ -920,10 +893,10 @@ public class LoggerMap extends MapActivity
     * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
     */
    @Override
-   protected void onActivityResult( int requestCode, int resultCode, Intent intent )
+   protected void onActivityResult(int requestCode, int resultCode, Intent intent)
    {
-      super.onActivityResult( requestCode, resultCode, intent );
-      if( resultCode != RESULT_CANCELED )
+      super.onActivityResult(requestCode, resultCode, intent);
+      if (resultCode != RESULT_CANCELED)
       {
          String sdcard = Environment.getExternalStorageDirectory().getAbsolutePath();
          File file;
@@ -938,96 +911,80 @@ public class LoggerMap extends MapActivity
          {
             case MENU_TRACKLIST:
                trackUri = intent.getData();
-               trackId = Long.parseLong( trackUri.getLastPathSegment() );
-               moveToTrack( trackId, true );
+               trackId = Long.parseLong(trackUri.getLastPathSegment());
+               moveToTrack(trackId, true);
                break;
             case MENU_ABOUT:
                break;
             case MENU_PICTURE:
-               file = new File( sdcard + Constants.TMPICTUREFILE_PATH );
+               file = new File(sdcard + Constants.TMPICTUREFILE_PATH);
                Calendar c = Calendar.getInstance();
-               newName =  String.format( "Picture_%tY-%tm-%td_%tH%tM%tS.jpg", c, c, c, c, c, c );
-               newFile = new File( sdcard + Constants.EXTERNAL_DIR + newName );
+               newName = String.format("Picture_%tY-%tm-%td_%tH%tM%tS.jpg", c, c, c, c, c, c);
+               newFile = new File(sdcard + Constants.EXTERNAL_DIR + newName);
                file.getParentFile().mkdirs();
-               boolean isRenamed = file.renameTo( newFile );
-               if( isRenamed )
+               boolean isRenamed = file.renameTo(newFile);
+               if (isRenamed)
                {
-                  Bitmap bm = BitmapFactory.decodeFile( newFile.getAbsolutePath() );
-                  if( bm != null )
+                  Bitmap bm = BitmapFactory.decodeFile(newFile.getAbsolutePath());
+                  if (bm != null)
                   {
-                     String height = Integer.toString( bm.getHeight() );
-                     String width = Integer.toString( bm.getWidth() );
+                     String height = Integer.toString(bm.getHeight());
+                     String width = Integer.toString(bm.getWidth());
                      bm.recycle();
                      bm = null;
                      builder = new Uri.Builder();
-                     fileUri = builder.scheme( "file").
-                        appendEncodedPath( "/" ).
-                        appendEncodedPath( newFile.getAbsolutePath() ).
-                        appendQueryParameter( "width", width ).
-                        appendQueryParameter( "height", height )
-                        .build();
-                     this.mLoggerServiceManager.storeMediaUri( fileUri );
+                     fileUri = builder.scheme("file").appendEncodedPath("/").appendEncodedPath(newFile.getAbsolutePath()).appendQueryParameter("width", width).appendQueryParameter("height", height)
+                           .build();
+                     this.mLoggerServiceManager.storeMediaUri(fileUri);
                      mLastSegmentOverlay.calculateMedia();
                      mMapView.postInvalidate();
                   }
                   else
                   {
-                     Log.e( TAG, "Failed to read image from: " + newFile.getAbsolutePath() );
+                     Log.e(TAG, "Failed to read image from: " + newFile.getAbsolutePath());
                   }
                }
                else
                {
-                  Log.e( TAG, "Failed to rename image: " + file.getAbsolutePath() );
+                  Log.e(TAG, "Failed to rename image: " + file.getAbsolutePath());
                }
                break;
             case MENU_VIDEO:
-               file = new File( sdcard + Constants.TMPICTUREFILE_PATH );               
+               file = new File(sdcard + Constants.TMPICTUREFILE_PATH);
                c = Calendar.getInstance();
-               newName =  String.format( "Video_%tY%tm%td_%tH%tM%tS.3gp", c, c, c, c, c, c );
-               newFile = new File( sdcard + Constants.EXTERNAL_DIR + newName );
+               newName = String.format("Video_%tY%tm%td_%tH%tM%tS.3gp", c, c, c, c, c, c);
+               newFile = new File(sdcard + Constants.EXTERNAL_DIR + newName);
                file.getParentFile().mkdirs();
-               file.renameTo( newFile );
+               file.renameTo(newFile);
                builder = new Uri.Builder();
-               fileUri = builder.scheme( "file").
-                  appendPath( newFile.getAbsolutePath() ).build();
-               this.mLoggerServiceManager.storeMediaUri( fileUri );
+               fileUri = builder.scheme("file").appendPath(newFile.getAbsolutePath()).build();
+               this.mLoggerServiceManager.storeMediaUri(fileUri);
                mLastSegmentOverlay.calculateMedia();
                mMapView.postInvalidate();
                break;
             case MENU_VOICE:
-               uri = Uri.parse( intent.getDataString() );
-               this.mLoggerServiceManager.storeMediaUri(  uri );
+               uri = Uri.parse(intent.getDataString());
+               this.mLoggerServiceManager.storeMediaUri(uri);
                mLastSegmentOverlay.calculateMedia();
                mMapView.postInvalidate();
                break;
             case MENU_TRACKING:
                trackUri = intent.getData();
-               trackId = Long.parseLong( trackUri.getLastPathSegment() );
-               moveToTrack( trackId, true );
-               Intent namingIntent = new Intent( this, NameTrack.class );
-               namingIntent.setData( ContentUris.withAppendedId( Tracks.CONTENT_URI, trackId ) );
-               startActivity( namingIntent );
+               trackId = Long.parseLong(trackUri.getLastPathSegment());
+               moveToTrack(trackId, true);
+               Intent namingIntent = new Intent(this, NameTrack.class);
+               namingIntent.setData(ContentUris.withAppendedId(Tracks.CONTENT_URI, trackId));
+               startActivity(namingIntent);
                break;
             default:
-               Log.e( TAG, "Returned form unknow activity: " + requestCode );
+               Log.e(TAG, "Returned form unknow activity: " + requestCode);
                break;
          }
       }
       else
       {
-         Log.w( TAG, "Received unexpected resultcode "+resultCode);
+         Log.w(TAG, "Received unexpected resultcode " + resultCode);
       }
-   }
-
-   /**
-    * (non-Javadoc)
-    * 
-    * @see com.google.android.maps.MapActivity#isRouteDisplayed()
-    */
-   @Override
-   protected boolean isRouteDisplayed()
-   {
-      return true;
    }
 
    private void updateTitleBar()
@@ -1036,145 +993,124 @@ public class LoggerMap extends MapActivity
       Cursor trackCursor = null;
       try
       {
-         trackCursor = resolver.query( ContentUris.withAppendedId( Tracks.CONTENT_URI, this.mTrackId ), new String[] { Tracks.NAME }, null, null, null );
-         if( trackCursor != null && trackCursor.moveToLast() )
+         trackCursor = resolver.query(ContentUris.withAppendedId(Tracks.CONTENT_URI, this.mTrackId), new String[] { Tracks.NAME }, null, null, null);
+         if (trackCursor != null && trackCursor.moveToLast())
          {
-            String trackName = trackCursor.getString( 0 );
-            this.setTitle( this.getString( R.string.app_name ) + ": " + trackName );
+            String trackName = trackCursor.getString(0);
+            this.setTitle(this.getString(R.string.app_name) + ": " + trackName);
          }
       }
       finally
       {
-         if( trackCursor != null )
+         if (trackCursor != null)
          {
             trackCursor.close();
          }
       }
    }
 
-   private void updateMapProvider()
-   {
-      int provider = new Integer( mSharedPreferences.getString( Constants.MAPPROVIDER, ""+Constants.GOOGLE ) ).intValue();
-      switch( provider )
-      {
-         case Constants.GOOGLE:
-            findViewById( R.id.myOsmMapView ).setVisibility( View.INVISIBLE );
-            findViewById( R.id.myMapView ).setVisibility( View.VISIBLE );
-            mMapView.setMap( findViewById( R.id.myMapView ) );
-            break;
-         case Constants.OSM:
-            findViewById( R.id.myMapView ).setVisibility( View.INVISIBLE );
-            findViewById( R.id.myOsmMapView ).setVisibility( View.VISIBLE );
-            mMapView.setMap( findViewById( R.id.myOsmMapView ) );
-            break;
-         default:
-            Log.e( TAG, "Fault in value "+provider+" as MapProvider." );
-            break;
-      }
-   }
-
    private void updateBlankingBehavior()
    {
-      boolean disableblanking = mSharedPreferences.getBoolean( Constants.DISABLEBLANKING, false );
-      if( disableblanking )
+      boolean disableblanking = mSharedPreferences.getBoolean(Constants.DISABLEBLANKING, false);
+      if (disableblanking)
       {
-         if( mWakeLock == null )
+         if (mWakeLock == null)
          {
-            PowerManager pm = (PowerManager) this.getSystemService( Context.POWER_SERVICE );
-            mWakeLock = pm.newWakeLock( PowerManager.SCREEN_DIM_WAKE_LOCK, TAG );
+            PowerManager pm = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, TAG);
          }
-         if( mLoggerServiceManager.getLoggingState() == Constants.LOGGING && !mWakeLock.isHeld() )
+         if (mLoggerServiceManager.getLoggingState() == Constants.LOGGING && !mWakeLock.isHeld())
          {
             mWakeLock.acquire();
-            Log.w( TAG, "Acquired lock to keep screen on!" );
+            Log.w(TAG, "Acquired lock to keep screen on!");
          }
       }
    }
 
    private void updateSpeedColoring()
    {
-      int trackColoringMethod = new Integer( mSharedPreferences.getString( Constants.TRACKCOLORING, "3" ) ).intValue();
+      int trackColoringMethod = new Integer(mSharedPreferences.getString(Constants.TRACKCOLORING, "3")).intValue();
       ContentResolver resolver = this.getApplicationContext().getContentResolver();
       Cursor waypointsCursor = null;
       try
       {
-         waypointsCursor = resolver.query( Uri.withAppendedPath( Tracks.CONTENT_URI, this.mTrackId + "/waypoints" ), new String[] { "avg(" + Waypoints.SPEED + ")" }, null, null, null );
-         if( waypointsCursor != null && waypointsCursor.moveToLast() )
+         waypointsCursor = resolver.query(Uri.withAppendedPath(Tracks.CONTENT_URI, this.mTrackId + "/waypoints"), new String[] { "avg(" + Waypoints.SPEED + ")" }, null, null, null);
+         if (waypointsCursor != null && waypointsCursor.moveToLast())
          {
-            mAverageSpeed = waypointsCursor.getDouble( 0 );
+            mAverageSpeed = waypointsCursor.getDouble(0);
          }
-         if( mAverageSpeed < 2 )
+         if (mAverageSpeed < 2)
          {
             mAverageSpeed = 5.55d / 2;
          }
       }
       finally
       {
-         if( waypointsCursor != null )
+         if (waypointsCursor != null)
          {
             waypointsCursor.close();
          }
       }
-      View speedbar = findViewById( R.id.speedbar );
-      if( trackColoringMethod == SegmentOverlay.DRAW_MEASURED || trackColoringMethod == SegmentOverlay.DRAW_CALCULATED )
+      View speedbar = findViewById(R.id.speedbar);
+      if (trackColoringMethod == SegmentOverlay.DRAW_MEASURED || trackColoringMethod == SegmentOverlay.DRAW_CALCULATED)
       {
-         drawSpeedTexts( mAverageSpeed );
-         speedbar.setVisibility( View.VISIBLE );
+         drawSpeedTexts(mAverageSpeed);
+         speedbar.setVisibility(View.VISIBLE);
          for (int i = 0; i < mSpeedtexts.length; i++)
          {
-            mSpeedtexts[i].setVisibility( View.VISIBLE );
+            mSpeedtexts[i].setVisibility(View.VISIBLE);
          }
       }
       else
       {
-         speedbar.setVisibility( View.INVISIBLE );
+         speedbar.setVisibility(View.INVISIBLE);
          for (int i = 0; i < mSpeedtexts.length; i++)
          {
-            mSpeedtexts[i].setVisibility( View.INVISIBLE );
+            mSpeedtexts[i].setVisibility(View.INVISIBLE);
          }
       }
       List< ? > overlays = mMapView.getOverlays();
       for (Object overlay : overlays)
       {
-         if( overlay instanceof SegmentOverlay )
+         if (overlay instanceof SegmentOverlay)
          {
-            ( (SegmentOverlay) overlay ).setTrackColoringMethod( trackColoringMethod, mAverageSpeed );
+            ((SegmentOverlay) overlay).setTrackColoringMethod(trackColoringMethod, mAverageSpeed);
          }
       }
    }
 
    private void updateSpeedDisplayVisibility()
    {
-      boolean showspeed = mSharedPreferences.getBoolean( Constants.SPEED, false );
-      if( showspeed )
+      boolean showspeed = mSharedPreferences.getBoolean(Constants.SPEED, false);
+      if (showspeed)
       {
-         mLastGPSSpeedView.setVisibility( View.VISIBLE );
-         mLastGPSSpeedView.setText( "" );
+         mLastGPSSpeedView.setVisibility(View.VISIBLE);
+         mLastGPSSpeedView.setText("");
       }
       else
       {
-         mLastGPSSpeedView.setVisibility( View.INVISIBLE );
+         mLastGPSSpeedView.setVisibility(View.INVISIBLE);
       }
    }
 
    private void updateAltitudeDisplayVisibility()
    {
-      boolean showaltitude = mSharedPreferences.getBoolean( Constants.ALTITUDE, false );
-      if( showaltitude )
+      boolean showaltitude = mSharedPreferences.getBoolean(Constants.ALTITUDE, false);
+      if (showaltitude)
       {
-         mLastGPSAltitudeView.setVisibility( View.VISIBLE );
-         mLastGPSAltitudeView.setText( "" );
+         mLastGPSAltitudeView.setVisibility(View.VISIBLE);
+         mLastGPSAltitudeView.setText("");
       }
       else
       {
-         mLastGPSAltitudeView.setVisibility( View.INVISIBLE );
+         mLastGPSAltitudeView.setVisibility(View.INVISIBLE);
       }
    }
-   
+
    private void updateCompassDisplayVisibility()
    {
-      boolean compass = mSharedPreferences.getBoolean( Constants.COMPASS, false );
-      if( compass )
+      boolean compass = mSharedPreferences.getBoolean(Constants.COMPASS, false);
+      if (compass)
       {
          mMylocation.enableCompass();
       }
@@ -1186,8 +1122,8 @@ public class LoggerMap extends MapActivity
 
    private void updateLocationDisplayVisibility()
    {
-      boolean location = mSharedPreferences.getBoolean( Constants.LOCATION, false );
-      if( location )
+      boolean location = mSharedPreferences.getBoolean(Constants.LOCATION, false);
+      if (location)
       {
          mMylocation.enableMyLocation();
       }
@@ -1198,10 +1134,7 @@ public class LoggerMap extends MapActivity
    }
 
    /**
-    * Retrieves the numbers of the measured speed and altitude 
-    * from the most recent waypoint and 
-    * updates UI components with this latest bit of information. 
-    * 
+    * Retrieves the numbers of the measured speed and altitude from the most recent waypoint and updates UI components with this latest bit of information.
     */
    private void updateDisplayedSpeedViews()
    {
@@ -1209,39 +1142,39 @@ public class LoggerMap extends MapActivity
       Cursor waypointsCursor = null;
       try
       {
-         Uri lastSegmentUri = Uri.withAppendedPath( Tracks.CONTENT_URI, this.mTrackId + "/segments/" + mLastSegment + "/waypoints" );
-         waypointsCursor = resolver.query( lastSegmentUri, new String[] { Waypoints.SPEED, Waypoints.ALTITUDE }, null, null, null );
-         if( waypointsCursor != null && waypointsCursor.moveToLast() )
+         Uri lastSegmentUri = Uri.withAppendedPath(Tracks.CONTENT_URI, this.mTrackId + "/segments/" + mLastSegment + "/waypoints");
+         waypointsCursor = resolver.query(lastSegmentUri, new String[] { Waypoints.SPEED, Waypoints.ALTITUDE }, null, null, null);
+         if (waypointsCursor != null && waypointsCursor.moveToLast())
          {
             // Speed number
-            double speed = waypointsCursor.getDouble( 0 );
-            speed = mUnits.conversionFromMetersPerSecond( speed );
-            String speedText = String.format( "%.0f %s", speed, mUnits.getSpeedUnit() );
-            mLastGPSSpeedView.setText( speedText );
-            
+            double speed = waypointsCursor.getDouble(0);
+            speed = mUnits.conversionFromMetersPerSecond(speed);
+            String speedText = String.format("%.0f %s", speed, mUnits.getSpeedUnit());
+            mLastGPSSpeedView.setText(speedText);
+
             // Speed color bar
-            if( speed > 2*mAverageSpeed )
+            if (speed > 2 * mAverageSpeed)
             {
                updateSpeedColoring();
                mMapView.postInvalidate();
             }
-            
+
             //Altitude number
-            double altitude = waypointsCursor.getDouble( 1 );
-            altitude = mUnits.conversionFromMeterToHeight( altitude );
-            String altitudeText = String.format( "%.0f %s", altitude, mUnits.getHeightUnit() );
-            mLastGPSAltitudeView.setText( altitudeText );
+            double altitude = waypointsCursor.getDouble(1);
+            altitude = mUnits.conversionFromMeterToHeight(altitude);
+            String altitudeText = String.format("%.0f %s", altitude, mUnits.getHeightUnit());
+            mLastGPSAltitudeView.setText(altitudeText);
          }
       }
       finally
       {
-         if( waypointsCursor != null )
+         if (waypointsCursor != null)
          {
             waypointsCursor.close();
          }
       }
    }
-   
+
    /**
     * For the current track identifier the route of that track is drawn by adding a OverLay for each segments in the track
     * 
@@ -1251,33 +1184,32 @@ public class LoggerMap extends MapActivity
    private void createDataOverlays()
    {
       mLastSegmentOverlay = null;
-      mMapView.clearOverlays();
-      mMapView.addOverlay( mMylocation );
+      removeOwnOverlays();
 
       ContentResolver resolver = this.getApplicationContext().getContentResolver();
       Cursor segments = null;
-      int trackColoringMethod = new Integer( mSharedPreferences.getString( Constants.TRACKCOLORING, "2" ) ).intValue();
+      int trackColoringMethod = new Integer(mSharedPreferences.getString(Constants.TRACKCOLORING, "2")).intValue();
 
       try
       {
-         Uri segmentsUri = Uri.withAppendedPath( Tracks.CONTENT_URI, this.mTrackId + "/segments" );
-         segments = resolver.query( segmentsUri, new String[] { Segments._ID }, null, null, null );
-         if( segments != null && segments.moveToFirst() )
+         Uri segmentsUri = Uri.withAppendedPath(Tracks.CONTENT_URI, this.mTrackId + "/segments");
+         segments = resolver.query(segmentsUri, new String[] { Segments._ID }, null, null, null);
+         if (segments != null && segments.moveToFirst())
          {
             do
             {
-               long segmentsId = segments.getLong( 0 );
-               Uri segmentUri = ContentUris.withAppendedId( segmentsUri, segmentsId );
-               SegmentOverlay segmentOverlay = new SegmentOverlay( this, segmentUri, trackColoringMethod, mAverageSpeed, this.mMapView );
-               mMapView.addOverlay( segmentOverlay );
+               long segmentsId = segments.getLong(0);
+               Uri segmentUri = ContentUris.withAppendedId(segmentsUri, segmentsId);
+               SegmentOverlay segmentOverlay = new SegmentOverlay(this, segmentUri, trackColoringMethod, mAverageSpeed, this.mMapView);
+               mMapView.getOverlays().add(segmentOverlay);
                mLastSegmentOverlay = segmentOverlay;
-               if( segments.isFirst() )
+               if (segments.isFirst())
                {
-                  segmentOverlay.addPlacement( SegmentOverlay.FIRST_SEGMENT );
+                  segmentOverlay.addPlacement(SegmentOverlay.FIRST_SEGMENT);
                }
-               if( segments.isLast() )
+               if (segments.isLast())
                {
-                  segmentOverlay.addPlacement( SegmentOverlay.LAST_SEGMENT );
+                  segmentOverlay.addPlacement(SegmentOverlay.LAST_SEGMENT);
                   getLastTrackPoint();
                }
                mLastSegment = segmentsId;
@@ -1287,40 +1219,52 @@ public class LoggerMap extends MapActivity
       }
       finally
       {
-         if( segments != null )
+         if (segments != null)
          {
             segments.close();
          }
       }
-      
+
       moveActiveViewWindow();
 
-      Uri lastSegmentUri = Uri.withAppendedPath( Tracks.CONTENT_URI, mTrackId+"/segments/"+mLastSegment+"/waypoints" );
-      resolver.unregisterContentObserver( this.mSegmentWaypointsObserver );
-      resolver.registerContentObserver( lastSegmentUri, false, this.mSegmentWaypointsObserver );
+      Uri lastSegmentUri = Uri.withAppendedPath(Tracks.CONTENT_URI, mTrackId + "/segments/" + mLastSegment + "/waypoints");
+      resolver.unregisterContentObserver(this.mSegmentWaypointsObserver);
+      resolver.registerContentObserver(lastSegmentUri, false, this.mSegmentWaypointsObserver);
    }
-   
+
+   private void removeOwnOverlays()
+   {
+      List<OpenStreetMapViewOverlay> overlays = mMapView.getOverlays();
+      for( OpenStreetMapViewOverlay overlay : overlays )
+      {
+         if( overlay instanceof SegmentOverlay )
+         {
+            overlays.remove(overlay);
+         }
+      }
+   }
+
    private void updateDataOverlays()
    {
       ContentResolver resolver = this.getApplicationContext().getContentResolver();
-      Uri segmentsUri = Uri.withAppendedPath( Tracks.CONTENT_URI, this.mTrackId + "/segments" );
+      Uri segmentsUri = Uri.withAppendedPath(Tracks.CONTENT_URI, this.mTrackId + "/segments");
       Cursor segmentsCursor = null;
-      List<?> overlays = this.mMapView.getOverlays();
+      List<OpenStreetMapViewOverlay> overlays = mMapView.getOverlays();
       int segmentOverlaysCount = 0;
-      
-      for( Object overlay : overlays )
+
+      for (Object overlay : overlays)
       {
-         if( overlay instanceof SegmentOverlay )
+         if (overlay instanceof SegmentOverlay)
          {
             segmentOverlaysCount++;
          }
       }
       try
       {
-         segmentsCursor = resolver.query( segmentsUri, new String[] { Segments._ID }, null, null, null );
-         if( segmentsCursor != null && segmentsCursor.getCount() == segmentOverlaysCount )
+         segmentsCursor = resolver.query(segmentsUri, new String[] { Segments._ID }, null, null, null);
+         if (segmentsCursor != null && segmentsCursor.getCount() == segmentOverlaysCount)
          {
-//            Log.d( TAG, "Alignment of segments" );
+            //            Log.d( TAG, "Alignment of segments" );
          }
          else
          {
@@ -1329,32 +1273,35 @@ public class LoggerMap extends MapActivity
       }
       finally
       {
-         if( segmentsCursor != null ) { segmentsCursor.close(); }
+         if (segmentsCursor != null)
+         {
+            segmentsCursor.close();
+         }
       }
       moveActiveViewWindow();
    }
 
    private void moveActiveViewWindow()
    {
-      GeoPoint lastPoint =  getLastTrackPoint();
-      if( lastPoint != null && mLoggerServiceManager.getLoggingState() == Constants.LOGGING )
+      GeoPoint lastPoint = getLastTrackPoint();
+      if (lastPoint != null && mLoggerServiceManager.getLoggingState() == Constants.LOGGING)
       {
          Point out = new Point();
-         this.mMapView.getProjection().toPixels( lastPoint, out );
+         this.mMapView.getProjection().toPixels(lastPoint.getLatitudeE6(), lastPoint.getLongitudeE6(), out);
          int height = this.mMapView.getHeight();
          int width = this.mMapView.getWidth();
-         if( out.x < 0 || out.y < 0 || out.y > height || out.x > width )
+         if (out.x < 0 || out.y < 0 || out.y > height || out.x > width)
          {
-            
+
             this.mMapView.clearAnimation();
-            this.mMapView.getController().setCenter( lastPoint );
-//            Log.d( TAG, "mMapView.setCenter()" );
+            mController.setCenter(lastPoint);
+            //            Log.d( TAG, "mMapView.setCenter()" );
          }
-         else if( out.x < width / 4 || out.y < height / 4 || out.x > ( width / 4 ) * 3 || out.y > ( height / 4 ) * 3 )
+         else if (out.x < width / 4 || out.y < height / 4 || out.x > (width / 4) * 3 || out.y > (height / 4) * 3)
          {
             this.mMapView.clearAnimation();
-            this.mMapView.getController().animateTo( lastPoint );
-//            Log.d( TAG, "mMapView.animateTo()" );
+            mController.animateTo(lastPoint);
+            //            Log.d( TAG, "mMapView.animateTo()" );
          }
       }
    }
@@ -1362,15 +1309,15 @@ public class LoggerMap extends MapActivity
    /**
     * @param avgSpeed avgSpeed in m/s
     */
-   private void drawSpeedTexts( double avgSpeed )
+   private void drawSpeedTexts(double avgSpeed)
    {
-      avgSpeed = mUnits.conversionFromMetersPerSecond( avgSpeed );
+      avgSpeed = mUnits.conversionFromMetersPerSecond(avgSpeed);
       for (int i = 0; i < mSpeedtexts.length; i++)
       {
-         mSpeedtexts[i].setVisibility( View.VISIBLE );
-         double speed = ( ( avgSpeed * 2d ) / 5d ) * i;
-         String speedText = String.format( "%.0f %s", speed, mUnits.getSpeedUnit() );
-         mSpeedtexts[i].setText( speedText );
+         mSpeedtexts[i].setVisibility(View.VISIBLE);
+         double speed = ((avgSpeed * 2d) / 5d) * i;
+         String speedText = String.format("%.0f %s", speed, mUnits.getSpeedUnit());
+         mSpeedtexts[i].setText(speedText);
       }
    }
 
@@ -1380,43 +1327,43 @@ public class LoggerMap extends MapActivity
     * @param trackId
     * @param center center on the end of the track
     */
-   private void moveToTrack( long trackId, boolean center )
+   private void moveToTrack(long trackId, boolean center)
    {
       Cursor track = null;
       try
       {
          ContentResolver resolver = this.getApplicationContext().getContentResolver();
-         Uri trackUri = ContentUris.withAppendedId( Tracks.CONTENT_URI, trackId );
-         Uri mediaUri = ContentUris.withAppendedId( Media.CONTENT_URI, trackId );
-         track = resolver.query( trackUri, new String[] { Tracks.NAME }, null, null, null );
-         if( track != null && track.moveToFirst() )
+         Uri trackUri = ContentUris.withAppendedId(Tracks.CONTENT_URI, trackId);
+         Uri mediaUri = ContentUris.withAppendedId(Media.CONTENT_URI, trackId);
+         track = resolver.query(trackUri, new String[] { Tracks.NAME }, null, null, null);
+         if (track != null && track.moveToFirst())
          {
             this.mTrackId = trackId;
             mLastSegment = -1;
             mLastWaypoint = -1;
-            resolver.unregisterContentObserver( this.mTrackSegmentsObserver );
-            resolver.unregisterContentObserver( this.mTrackMediasObserver );
-            Uri tracksegmentsUri = Uri.withAppendedPath( Tracks.CONTENT_URI, trackId+"/segments" );
-            
-            resolver.registerContentObserver( tracksegmentsUri, false, this.mTrackSegmentsObserver );
-            resolver.registerContentObserver( mediaUri, false, this.mTrackMediasObserver );
-            
-            this.mMapView.getOverlays().clear();
+            resolver.unregisterContentObserver(this.mTrackSegmentsObserver);
+            resolver.unregisterContentObserver(this.mTrackMediasObserver);
+            Uri tracksegmentsUri = Uri.withAppendedPath(Tracks.CONTENT_URI, trackId + "/segments");
+
+            resolver.registerContentObserver(tracksegmentsUri, false, this.mTrackSegmentsObserver);
+            resolver.registerContentObserver(mediaUri, false, this.mTrackMediasObserver);
+
+            removeOwnOverlays();
 
             updateTitleBar();
             updateDataOverlays();
             updateSpeedColoring();
 
-            if( center )
+            if (center)
             {
                GeoPoint lastPoint = getLastTrackPoint();
-               this.mMapView.getController().animateTo( lastPoint );
+               mController.animateTo(lastPoint);
             }
          }
       }
       finally
       {
-         if( track != null )
+         if (track != null)
          {
             track.close();
          }
@@ -1433,28 +1380,28 @@ public class LoggerMap extends MapActivity
    {
       int microLatitude = 0;
       int microLongitude = 0;
-      LocationManager locationManager = (LocationManager) this.getApplication().getSystemService( Context.LOCATION_SERVICE );
-      Location locationFine = locationManager.getLastKnownLocation( LocationManager.GPS_PROVIDER );
-      if( locationFine != null )
+      LocationManager locationManager = (LocationManager) this.getApplication().getSystemService(Context.LOCATION_SERVICE);
+      Location locationFine = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+      if (locationFine != null)
       {
-         microLatitude = (int) ( locationFine.getLatitude() * 1E6d );
-         microLongitude = (int) ( locationFine.getLongitude() * 1E6d );
+         microLatitude = (int) (locationFine.getLatitude() * 1E6d);
+         microLongitude = (int) (locationFine.getLongitude() * 1E6d);
       }
-      if( locationFine == null || microLatitude == 0 || microLongitude == 0 )
+      if (locationFine == null || microLatitude == 0 || microLongitude == 0)
       {
-         Location locationCoarse = locationManager.getLastKnownLocation( LocationManager.NETWORK_PROVIDER );
-         if( locationCoarse != null )
+         Location locationCoarse = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+         if (locationCoarse != null)
          {
-            microLatitude = (int) ( locationCoarse.getLatitude() * 1E6d );
-            microLongitude = (int) ( locationCoarse.getLongitude() * 1E6d );
+            microLatitude = (int) (locationCoarse.getLatitude() * 1E6d);
+            microLongitude = (int) (locationCoarse.getLongitude() * 1E6d);
          }
-         if( locationCoarse == null || microLatitude == 0 || microLongitude == 0 )
+         if (locationCoarse == null || microLatitude == 0 || microLongitude == 0)
          {
             microLatitude = 51985105;
             microLongitude = 5106132;
          }
       }
-      GeoPoint geoPoint = new GeoPoint( microLatitude, microLongitude );
+      GeoPoint geoPoint = new GeoPoint(microLatitude, microLongitude);
       return geoPoint;
    }
 
@@ -1470,26 +1417,26 @@ public class LoggerMap extends MapActivity
       try
       {
          ContentResolver resolver = this.getContentResolver();
-         waypoint = resolver.query( Uri.withAppendedPath( Tracks.CONTENT_URI, mTrackId + "/waypoints" ), new String[] { Waypoints.LATITUDE, Waypoints.LONGITUDE,
-               "max(" + Waypoints.TABLE + "." + Waypoints._ID + ")" }, null, null, null );
-         if( waypoint != null && waypoint.moveToLast() )
+         waypoint = resolver.query(Uri.withAppendedPath(Tracks.CONTENT_URI, mTrackId + "/waypoints"), new String[] { Waypoints.LATITUDE, Waypoints.LONGITUDE,
+               "max(" + Waypoints.TABLE + "." + Waypoints._ID + ")" }, null, null, null);
+         if (waypoint != null && waypoint.moveToLast())
          {
-            int microLatitude = (int) ( waypoint.getDouble( 0 ) * 1E6d );
-            int microLongitude = (int) ( waypoint.getDouble( 1 ) * 1E6d );
-            lastPoint = new GeoPoint( microLatitude, microLongitude );
+            int microLatitude = (int) (waypoint.getDouble(0) * 1E6d);
+            int microLongitude = (int) (waypoint.getDouble(1) * 1E6d);
+            lastPoint = new GeoPoint(microLatitude, microLongitude);
          }
-         if( lastPoint == null || lastPoint.getLatitudeE6() == 0 || lastPoint.getLongitudeE6() == 0 )
+         if (lastPoint == null || lastPoint.getLatitudeE6() == 0 || lastPoint.getLongitudeE6() == 0)
          {
             lastPoint = getLastKnowGeopointLocation();
          }
          else
          {
-            mLastWaypoint = waypoint.getLong( 2 );
+            mLastWaypoint = waypoint.getLong(2);
          }
       }
       finally
       {
-         if( waypoint != null )
+         if (waypoint != null)
          {
             waypoint.close();
          }
@@ -1504,16 +1451,16 @@ public class LoggerMap extends MapActivity
       try
       {
          ContentResolver resolver = this.getApplicationContext().getContentResolver();
-         track = resolver.query( Tracks.CONTENT_URI, new String[] { "max(" + Tracks._ID + ")", Tracks.NAME, }, null, null, null );
-         if( track != null && track.moveToLast() )
+         track = resolver.query(Tracks.CONTENT_URI, new String[] { "max(" + Tracks._ID + ")", Tracks.NAME, }, null, null, null);
+         if (track != null && track.moveToLast())
          {
-            trackId = track.getInt( 0 );
-            moveToTrack( trackId, true );
+            trackId = track.getInt(0);
+            moveToTrack(trackId, true);
          }
       }
       finally
       {
-         if( track != null )
+         if (track != null)
          {
             track.close();
          }
@@ -1525,12 +1472,12 @@ public class LoggerMap extends MapActivity
     */
    private void addPicture()
    {
-      Intent i = new Intent( android.provider.MediaStore.ACTION_IMAGE_CAPTURE );
-      File file = new File( Environment.getExternalStorageDirectory().getAbsolutePath() + Constants.TMPICTUREFILE_PATH );
-//      Log.d( TAG, "Picture requested at: " + file );
-      i.putExtra( android.provider.MediaStore.EXTRA_OUTPUT, Uri.fromFile( file ) );
-      i.putExtra( android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 1 );
-      startActivityForResult( i, MENU_PICTURE );
+      Intent i = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+      File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + Constants.TMPICTUREFILE_PATH);
+      //      Log.d( TAG, "Picture requested at: " + file );
+      i.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, Uri.fromFile(file));
+      i.putExtra(android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 1);
+      startActivityForResult(i, MENU_PICTURE);
    }
 
    /***
@@ -1538,18 +1485,18 @@ public class LoggerMap extends MapActivity
     */
    private void addVideo()
    {
-      Intent i = new Intent( android.provider.MediaStore.ACTION_VIDEO_CAPTURE );
-      File file = new File( Environment.getExternalStorageDirectory().getAbsolutePath() + Constants.TMPICTUREFILE_PATH );
-//      Log.d( TAG, "Video requested at: " + file );
-      i.putExtra( android.provider.MediaStore.EXTRA_OUTPUT, Uri.fromFile( file ) );
-      i.putExtra( android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 1 );
-      startActivityForResult( i, MENU_VIDEO );
+      Intent i = new Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
+      File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + Constants.TMPICTUREFILE_PATH);
+      //      Log.d( TAG, "Video requested at: " + file );
+      i.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, Uri.fromFile(file));
+      i.putExtra(android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 1);
+      startActivityForResult(i, MENU_VIDEO);
    }
 
    private void addVoice()
    {
-      Intent intent = new Intent( android.provider.MediaStore.Audio.Media.RECORD_SOUND_ACTION );
-      startActivityForResult( intent, MENU_VOICE );
+      Intent intent = new Intent(android.provider.MediaStore.Audio.Media.RECORD_SOUND_ACTION);
+      startActivityForResult(intent, MENU_VOICE);
    }
 
    /**
@@ -1557,9 +1504,9 @@ public class LoggerMap extends MapActivity
     * 
     * @param mediaAdapter
     */
-   public void showDialog( BaseAdapter mediaAdapter )
+   public void showDialog(BaseAdapter mediaAdapter)
    {
       mMediaAdapter = mediaAdapter;
-      showDialog( LoggerMap.DIALOG_URIS );
+      showDialog(LoggerMap.DIALOG_URIS);
    }
 }

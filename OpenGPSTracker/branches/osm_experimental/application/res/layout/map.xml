@@ -4,25 +4,13 @@
    android:layout_width="fill_parent"
    android:layout_height="fill_parent"
 >
-   <com.google.android.maps.MapView
-      android:id="@+id/myMapView"
-      android:layout_width="fill_parent"
-      android:layout_height="fill_parent"
-      android:enabled="true"
-      android:clickable="true"
-      android:apiKey="0bmdf4-ggC51rlDKzrxXimRiQ2pEd0x_ut6292w" 
-      android:visibility="visible" />
-   <!--  Release         : 0bmdf4-ggC50QWBY1OgGRutQ9bIboIy11OczZbw -->
-   <!--  Emulator        : 0bmdf4-ggC51rlDKzrxXimRiQ2pEd0x_ut6292w -->
-   <!--  Mac emulator    : 0bmdf4-ggC527Bi-Ac3W30MvwmhnL-5CBRo6Slg -->
 
    <org.andnav.osm.views.OpenStreetMapView
       android:id="@+id/myOsmMapView"
       android:layout_width="fill_parent"
       android:layout_height="fill_parent"
-      android:visibility="invisible" 
-      android:clickable="true"
-      android:enabled="true"
+      renderer="CLOUDMADESTANDARDTILES"
+      cloudmadeStyle="1"
    />
 
    <TextView
