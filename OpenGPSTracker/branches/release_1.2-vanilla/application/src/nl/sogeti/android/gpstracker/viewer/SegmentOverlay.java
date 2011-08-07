@@ -40,6 +40,12 @@ import nl.sogeti.android.gpstracker.db.GPStracking.Waypoints;
 import nl.sogeti.android.gpstracker.viewer.proxy.MapViewProxy;
 import nl.sogeti.android.gpstracker.viewer.proxy.OverlayProxy;
 import nl.sogeti.android.gpstracker.viewer.proxy.ProjectionProxy;
+
+import org.osmdroid.api.IGeoPoint;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Overlay;
+
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -72,17 +78,13 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapView;
-import com.google.android.maps.Overlay;
-
 /**
  * Creates an overlay that can draw a single segment of connected waypoints
  * 
  * @version $Id$
  * @author rene (c) Jan 11, 2009, Sogeti B.V.
  */
-public class SegmentOverlay extends Overlay implements OverlayProxy
+public class SegmentOverlay implements OverlayProxy
 {
    public static final int MIDDLE_SEGMENT = 0;
    public static final int FIRST_SEGMENT = 1;
@@ -108,8 +110,8 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
    private Uri mWaypointsUri;
    private Uri mMediaUri;
    private double mAvgSpeed;
-   private GeoPoint mGeoTopLeft;
-   private GeoPoint mGeoBottumRight;
+   private IGeoPoint mGeoTopLeft;
+   private IGeoPoint mGeoBottumRight;
 
    private Vector<DotVO> mDotPath;
    private Vector<DotVO> mDotPathCalculation;
@@ -220,7 +222,7 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
          {
             int x = (int) e.getX();
             int y = (int) e.getY();
-            GeoPoint tappedGeoPoint = mProjection.fromPixels(x, y);
+            IGeoPoint tappedGeoPoint = mProjection.fromPixels(x, y);
             return SegmentOverlay.this.commonOnTap(tappedGeoPoint );
          }
 
@@ -275,18 +277,7 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
          }
       });
    }
-   
-   @Override
-   public void draw( Canvas canvas, MapView mapView, boolean shadow )
-   {
-      super.draw( canvas, mapView, shadow );
-      if( !shadow )
-      {
-         mProjection.setProjection( mapView.getProjection() ); 
-         draw( canvas );
-      }
-   }
-      
+         
    /** 
     * Private draw method called by both the draw from Google Overlay and the OSM Overlay  
     * 
@@ -328,8 +319,8 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
     */
    private synchronized void calculateTrackAsync()
    {
-      GeoPoint oldTopLeft = mGeoTopLeft;
-      GeoPoint oldBottumRight = mGeoBottumRight;
+      IGeoPoint oldTopLeft = mGeoTopLeft;
+      IGeoPoint oldBottumRight = mGeoBottumRight;
       mGeoTopLeft = mProjection.fromPixels( 0, 0 );
       mGeoBottumRight = mProjection.fromPixels( mWidth, mHeight );
 
@@ -1213,17 +1204,7 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
       return false;
    }
 
-   /*
-    * (non-Javadoc)
-    * @see com.google.android.maps.Overlay#onTap(com.google.android.maps.GeoPoint, com.google.android.maps.MapView)
-    */
-   @Override
-   public boolean onTap( GeoPoint tappedGeoPoint, MapView mapView )
-   {
-      return commonOnTap(tappedGeoPoint) ;
-   }
-
-   private boolean commonOnTap(GeoPoint tappedGeoPoint)
+   private boolean commonOnTap(IGeoPoint tappedGeoPoint)
    {
       List<Uri> tappedUri = new Vector<Uri>();
 
@@ -1314,11 +1295,6 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
          return imageView;
 
       }
-   }
-
-   public Overlay getGoogleOverlay()
-   {
-      return this;
    }
 
    public org.osmdroid.views.overlay.Overlay getOSMOverlay()
