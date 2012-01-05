@@ -1446,14 +1446,8 @@ public class GPSLoggerService extends Service implements LocationListener
          boolean timeBroadcast = minTime > 0 && passedTime >= minTime;
          if (distanceBroadcast || timeBroadcast)
          {
-            if (distanceBroadcast)
-            {
-               mBroadcastDistance = 0;
-            }
-            if (timeBroadcast)
-            {
-               mLastTimeBroadcast = nowTime;
-            }
+            mBroadcastDistance = 0;
+            mLastTimeBroadcast = nowTime;
             this.sendBroadcast(intent, "android.permission.ACCESS_FINE_LOCATION");
          }
       }
