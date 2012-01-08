@@ -40,6 +40,7 @@ import nl.sogeti.android.gpstracker.db.GPStracking;
 import nl.sogeti.android.gpstracker.db.GPStracking.Media;
 import nl.sogeti.android.gpstracker.db.GPStracking.Waypoints;
 import nl.sogeti.android.gpstracker.util.UnitsI18n;
+import nl.sogeti.android.gpstracker.viewer.fragment.MapFragment;
 import nl.sogeti.android.gpstracker.viewer.proxy.MapViewProxy;
 import nl.sogeti.android.gpstracker.viewer.proxy.OverlayProxy;
 import nl.sogeti.android.gpstracker.viewer.proxy.ProjectionProxy;
@@ -103,7 +104,7 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
    private int mTrackColoringMethod = DRAW_CALCULATED;
 
    private ContentResolver mResolver;
-   private LoggerMap mLoggerMap;
+   private MapFragment mLoggerMap;
    private ProjectionProxy mProjection;
    private org.osmdroid.views.overlay.Overlay mOsmOverlay;
 
@@ -177,7 +178,7 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
     * @param avgSpeed
     * @param mMapView
     */
-   public SegmentOverlay(LoggerMap loggermap, Uri segmentUri, int color, double avgSpeed, MapViewProxy mapView, Handler handler)
+   public SegmentOverlay(MapFragment loggermap, Uri segmentUri, int color, double avgSpeed, MapViewProxy mapView, Handler handler)
    {
       super();
       mHandler = handler;
@@ -188,7 +189,7 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
       mSegmentUri = segmentUri;
       mMediaUri = Uri.withAppendedPath( mSegmentUri, "media" );
       mWaypointsUri = Uri.withAppendedPath( mSegmentUri, "waypoints" );
-      mResolver = mLoggerMap.getContentResolver();
+      mResolver = mLoggerMap.getActivity().getContentResolver();
       mRequeryFlag = true;
       mCurrentColor = Color.rgb( 255, 0, 0 );
       mProjection = mapView.getProjection();
@@ -216,7 +217,7 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
       mMediaPath = new Vector<MediaVO>();
       mMediaPathCalculation = new Vector<MediaVO>();
       
-      mOsmOverlay = new org.osmdroid.views.overlay.Overlay(mLoggerMap) {
+      mOsmOverlay = new org.osmdroid.views.overlay.Overlay(mLoggerMap.getActivity()) {
          
          @Override
          public boolean onSingleTapUp(MotionEvent e, org.osmdroid.views.MapView openStreetMapView) 
@@ -1179,11 +1180,11 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
    {
       if( tappedUri.size() == 1 )
       {
-         return handleMedia( mLoggerMap, tappedUri.get( 0 ) );
+         return handleMedia( mLoggerMap.getActivity(), tappedUri.get( 0 ) );
       }
       else
       {
-         BaseAdapter adapter = new MediaAdapter( mLoggerMap, tappedUri );
+         BaseAdapter adapter = new MediaAdapter( mLoggerMap.getActivity(), tappedUri );
          mLoggerMap.showDialog( adapter );
          return true;
       }
@@ -1288,13 +1289,13 @@ public class SegmentOverlay extends Overlay implements OverlayProxy
             }
             if( tapped != null )
             {
-               DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(mLoggerMap.getApplicationContext());
+               DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(mLoggerMap.getActivity().getApplicationContext());
                String timetxt = timeFormat.format(new Date(tapped.time));
-               UnitsI18n units = new UnitsI18n( mLoggerMap, null);
+               UnitsI18n units = new UnitsI18n( mLoggerMap.getActivity(), null);
                double speed = units.conversionFromMetersPerSecond( tapped.speed );
                String speedtxt = String.format( "%.1f %s", speed, units.getSpeedUnit() );
                String text = mLoggerMap.getString(R.string.time_and_speed, timetxt, speedtxt );
-               Toast toast = Toast.makeText(mLoggerMap, text, Toast.LENGTH_SHORT);
+               Toast toast = Toast.makeText(mLoggerMap.getActivity(), text, Toast.LENGTH_SHORT);
                toast.show();
             }
          }
