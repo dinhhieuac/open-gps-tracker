@@ -2,7 +2,7 @@
 <manifest 
     xmlns:android="http://schemas.android.com/apk/res/android" 
     package="nl.sogeti.android.gpstracker"
-	android:versionCode="66" android:versionName="1.3.1-cupcake">
+	android:versionCode="69" android:versionName="1.3.2-cupcake">
 
     <uses-sdk android:minSdkVersion="3"/>
 

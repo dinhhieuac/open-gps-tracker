@@ -58,7 +58,6 @@ import org.apache.ogt.http.entity.mime.HttpMultipartMode;
 import org.apache.ogt.http.entity.mime.MultipartEntity;
 import org.apache.ogt.http.entity.mime.content.FileBody;
 import org.apache.ogt.http.entity.mime.content.StringBody;
-import org.apache.ogt.http.params.HttpParams;
 import org.apache.ogt.http.util.EntityUtils;
 
 import android.content.ContentResolver;
@@ -203,7 +202,7 @@ public class UploadBreadcrumbsTrackTask extends GpxCreator
             throw new IOException("Fail to execute request due to canceling");
          }
          // Build the multipart body with the upload data
-         MultipartEntity entity = new MultipartEntity(HttpMultipartMode.STRICT);
+         MultipartEntity entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
          entity.addPart("import_type", new StringBody("GPX"));
          //entity.addPart("gpx",         new FileBody(gpxFile));
          entity.addPart("gpx", new StringBody(gpxString));
@@ -243,7 +242,12 @@ public class UploadBreadcrumbsTrackTask extends GpxCreator
          responseEntity = response.getEntity();
          InputStream stream = responseEntity.getContent();
          responseText = XmlCreator.convertStreamToString(stream);
-
+         
+         if( BreadcrumbsAdapter.DEBUG )
+         {
+            Log.d( TAG, "Upload Response: "+responseText);
+         }
+         
          Pattern p = Pattern.compile(">([0-9]+)</id>");
          Matcher m = p.matcher(responseText);
          if (m.find())
