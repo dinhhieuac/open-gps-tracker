@@ -1426,7 +1426,16 @@ public class GPSLoggerService extends Service implements LocationListener
       if (mStreamBroadcast)
       {
          final long minDistance = (long) PreferenceManager.getDefaultSharedPreferences(this).getFloat("streambroadcast_distance_meter", 5000F);
-         final long minTime = 60000 * Long.parseLong(PreferenceManager.getDefaultSharedPreferences(this).getString("streambroadcast_time", "1"));
+         long prefTime = 1L;
+         try
+         {
+            prefTime = Long.parseLong(PreferenceManager.getDefaultSharedPreferences(this).getString("streambroadcast_time", "1"));
+         }
+         catch (NumberFormatException e)
+         {
+            Log.e( TAG, "Stream broadcast time: Invalid minutes value, defaulting to 1 minute");
+         }
+         final long minTime = 60000 * prefTime;
          final long nowTime = location.getTime();
          if (mPreviousLocation != null)
          {
